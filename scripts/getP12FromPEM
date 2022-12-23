@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# This script will extract a P12 file from a PEM file
+# Usage: sh getP12FromPEM -i <pem file> -p <password>
+
+# Get the options
+while getopts ":i:o:p:" opt; do
+  case $opt in
+  i)
+    pemFile="$OPTARG"
+    ;;
+  p)
+    password="$OPTARG"
+    ;;
+  \?)
+    echo "Invalid option -$OPTARG" >&2
+    ;;
+  esac
+done
+
+# Check if the options are set
+if [ -z "$pemFile" ] || [ -z "$password" ]; then
+  echo "Usage: ./getP12FromPEM -i <pem file> -p <password>"
+  exit 1
+fi
+
+# Check if the pem file exists
+if [ ! -f "$pemFile" ]; then
+  echo "The pem file does not exist"
+  exit 1
+fi
+
+# p12File is the same as the pemFile but with a .p12 extension
+p12File="${pemFile%.*}.p12"
+
+# Check if the p12 file exists
+if [ -f "$p12File" ]; then
+  echo "The p12 file already exists"
+  exit 1
+fi
+
+# Extract the p12 file
+openssl pkcs12 -export -in "$pemFile" -out "$p12File" -password pass:"$password"
+
+# Change the p12 file permissions
+chmod 600 "$p12File"
+
+# Check if the p12 file exists
+if [ ! -f "$p12File" ]; then
+  echo "The p12 file does not exist"
+  exit 1
+fi
+
+# Check if the p12 file is empty
+if [ ! -s "$p12File" ]; then
+  echo "The p12 file is empty"
+  exit 1
+fi
+
+# Success
+echo "The p12 file was successfully created"
+# Path: scripts/getPEMFromPFX

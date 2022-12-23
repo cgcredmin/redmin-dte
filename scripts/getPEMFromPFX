@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# This script will extract a PEM file from a PFX file
+# Usage: sh getPEMFromPFX -i <pfx file> -p <password>
+
+# Get the options
+while getopts ":i:o:p:" opt; do
+  case $opt in
+  i)
+    pfxFile="$OPTARG"
+    ;;
+  p)
+    password="$OPTARG"
+    ;;
+  \?)
+    echo "Invalid option -$OPTARG" >&2
+    ;;
+  esac
+done
+
+# Check if the options are set
+if [ -z "$pfxFile" ] || [ -z "$password" ]; then
+  echo "Usage: ./getPEMFromPFX -i <pfx file> -p <password>"
+  exit 1
+fi
+
+# Check if the pfx file exists
+if [ ! -f "$pfxFile" ]; then
+  echo "The pfx file does not exist"
+  exit 1
+fi
+
+# pemFile is the same as the pfxFile but with a .pem extension
+pemFile="${pfxFile%.*}.pem"
+
+# Check if the pem file exists
+if [ -f "$pemFile" ]; then
+  echo "The pem file already exists"
+  exit 1
+fi
+
+# Extract the pem file
+openssl pkcs12 -in "$pfxFile" -out "$pemFile" -nodes -password pass:"$password"
+
+# Change the pem file permissions
+chmod 600 "$pemFile"
+
+# Check if the pem file exists
+if [ ! -f "$pemFile" ]; then
+  echo "The pem file does not exist"
+  exit 1
+fi
+
+# Check if the pem file is empty
+if [ ! -s "$pemFile" ]; then
+  echo "The pem file is empty"
+  exit 1
+fi
+
+# Success
+echo "The pem file was successfully extracted"

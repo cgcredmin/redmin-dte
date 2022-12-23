@@ -1,0 +1,26 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Config extends Model
+{
+  protected $table = 'config';
+
+  public $incrementing = false;
+
+  protected $fillable = [
+    'SII_USER',
+    'SII_PASS',
+    'SII_SERVER',
+    'SII_ENV',
+    'CERT_PASS',
+    'DTE_RUT_CERT',
+    'DTE_NOMBRE_CERT',
+    'DTE_RUT_EMPRESA',
+    'DTE_NOMBRE_EMPRESA',
+  ];
+
+  public $timestamps = true;
+}

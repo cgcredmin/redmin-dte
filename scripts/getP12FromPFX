@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# This script will extract a P12 file from a PFX file
+# Usage: sh getP12FromPFX -i <pfx file> -p <password>
+
+# Get the options
+while getopts ":i:o:p:" opt; do
+  case $opt in
+  i)
+    pfxFile="$OPTARG"
+    ;;
+  p)
+    password="$OPTARG"
+    ;;
+  \?)
+    echo "Invalid option -$OPTARG" >&2
+    ;;
+  esac
+done
+
+# Check if the options are set
+if [ -z "$pfxFile" ] || [ -z "$password" ]; then
+  echo "Usage: ./getP12FromPFX -i <pfx file> -p <password>"
+  exit 1
+fi
+
+# Check if the pfx file exists
+if [ ! -f "$pfxFile" ]; then
+  echo "The pfx file does not exist"
+  exit 1
+fi
+
+# p12File is the same as the pfxFile but with a .p12 extension

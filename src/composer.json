@@ -1,0 +1,56 @@
+{
+  "name": "redmin/dte",
+  "description": "Pasarela de comunicación con el SII.",
+  "keywords": [
+    "framework",
+    "laravel",
+    "lumen",
+    "sii",
+    "redmin",
+    "dte"
+  ],
+  "license": "AGPL",
+  "type": "project",
+  "require": {
+    "php": "^8.0",
+    "guzzlehttp/guzzle": "^7.5",
+    "laravel/lumen-framework": "^9.0",
+    "league/flysystem": "^3.11",
+    "milon/barcode": "^9.0",
+    "sasco/libredte": "^21.10",
+    "tymon/jwt-auth": "*"
+  },
+  "require-dev": {
+    "flipbox/lumen-generator": "^9.1",
+    "fakerphp/faker": "^1.9.1",
+    "mockery/mockery": "^1.4.4",
+    "phpunit/phpunit": "^9.5.10"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/",
+      "Database\\Factories\\": "database/factories/",
+      "Database\\Seeders\\": "database/seeders/"
+    },
+    "files": [
+      "app/helpers.php"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "post-root-package-install": [
+      "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+    ]
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "Creating cron job for scheduled tasks"
+crontab -l mycrontask
+echo "* * * * * cd /var/www/html/ && php artisan schedule:run >> /dev/null 2>&1" >> mycrontask
+crontab mycrontask
+rm mycrontask
