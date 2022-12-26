@@ -14,7 +14,7 @@ return new class extends Migration {
   public function up()
   {
     Schema::create('config', function (Blueprint $table) {
-      $table->id();
+      $table->id()->autoIncrement();
       $table
         ->string('SII_USER')
         ->default('-')

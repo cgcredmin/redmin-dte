@@ -18,7 +18,7 @@ return new class extends Migration {
   public function up()
   {
     Schema::create('contribuyentes', function (Blueprint $table) {
-      $table->id();
+      $table->id()->autoIncrement();
       $table->string('rut');
       $table->string('dv');
       $table->string('razon_social');

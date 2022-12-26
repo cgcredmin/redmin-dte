@@ -13,7 +13,7 @@ return new class extends Migration {
   public function up()
   {
     Schema::create('tempfiles', function (Blueprint $table) {
-      $table->id();
+      $table->id()->autoIncrement();
       $table->string('nombre');
       $table->string('hash');
       $table->string('ext');

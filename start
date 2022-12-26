@@ -10,7 +10,8 @@ OBFUSCATE=0
 APP_NAME="redmindte"
 APP_NAME_UPPER="REDMINDTE"
 AWS_REGION="us-west-2"
-REPOSITORY="497547131485.dkr.ecr.us-west-2.amazonaws.com"
+# REPOSITORY="497547131485.dkr.ecr.us-west-2.amazonaws.com"
+REPOSITORY="public.ecr.aws/z5x9j2p1/redmindte"
 SUFFIX=""
 
 LINE=$(printf "%*s" $(tput cols) | tr ' ' -)
@@ -139,7 +140,7 @@ goDev() {
     -e APP_VERSION="${newVersion}${SUFFIX}" \
     --network="dockerdb_default" \
     --name ${APP_NAME}_dev \
-    ${APP_NAME}_dev:$newVersion # --network=local_network \
+    ${APP_NAME}_dev:$newVersion
 
   sendNotification "DEV:IMAGE Build" "Image ${APP_NAME}_dev builded"
   openBash "${APP_NAME}_dev"
@@ -257,7 +258,8 @@ getLatestVersion() {
 }
 awsLogin() {
   log "green" "AWS LOGIN"
-  aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REPOSITORY}
+  # aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REPOSITORY}
+  aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/z5x9j2p1
 }
 pushToAWS() {
   awsLogin
@@ -285,14 +287,15 @@ pushToAWS() {
   log "yellow" "PUSH TO AWS ${APP_NAME}:$tag"
 
   #obfuscate
-
-  DOCKER_BUILDKIT=1 docker build -t ${APP_NAME}:"$tag" .
+  docker buildx create --use
+  docker buildx build --platform linux/amd64 --push -t ${APP_NAME}:"$tag" .
+  # docker build -t ${APP_NAME}:"$tag" .
   sendNotification "IMAGE Build" "Image ${APP_NAME}:$tag builded"
-
   #deobfuscate
 
-  docker tag ${APP_NAME}:"$tag" ${REPOSITORY}/${APP_NAME}:"$tag"
-  docker push ${REPOSITORY}/${APP_NAME}:"$tag"
+  docker tag ${APP_NAME}:"$tag" ${REPOSITORY}:"$tag"
+  docker push ${REPOSITORY}:"$tag"
+  echo "docker push ${REPOSITORY}:$tag"
   sendNotification "IMAGE Pushed" "Image ${APP_NAME}:$tag pushed"
 }
 goOther() {

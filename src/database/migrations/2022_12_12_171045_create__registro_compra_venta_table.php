@@ -13,14 +13,14 @@ return new class extends Migration {
   public function up()
   {
     Schema::create('registro_compra_venta', function (Blueprint $table) {
-      $table->id();
-      $table->enum('registro', ['compra', 'venta']);
+      $table->id()->autoIncrement();
+      $table->enum('registro', ['compra', 'venta'])->default('compra');
       $table->enum('tipo', [
         'registro',
         'pendiente',
         'no_incluir',
         'reclamado',
-      ]);
+      ])->default('registro');
 
       $table->string('dhdrCodigo')->nullable();
       $table->string('dcvCodigo')->nullable();

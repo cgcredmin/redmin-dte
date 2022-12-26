@@ -13,7 +13,7 @@ return new class extends Migration {
   public function up()
   {
     Schema::create('comprobacion_sii', function (Blueprint $table) {
-      $table->id();
+      $table->id()->autoIncrement();
       $table->unsignedBigInteger('registro_compra_venta_id');
       $table
         ->string('estado')
