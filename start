@@ -73,23 +73,14 @@ log() {
 }
 kill() {
   log "red" "KILLING $1"
-  # Detener contenedor y eliminar imagen
-  containerId=$(docker container list | grep $1 | awk "{print $1}")
-  dockerImage=$(docker container list | grep $1 | awk "{print $2}")
-  # split dockerImage and assign the last part to a variable
-  imageTag=$(echo $dockerImage | awk -F: "{print $NF}")
-  log "red" "IMAGE TAG TO REMOVE $imageTag"
-  imageId=$(docker image ls | grep $1 | grep -iF -v "$imageTag" | awk "{print $3}")
-  log "red" "IMAGE ID TO REMOVE $imageId"
 
-  if [[ -n $containerId ]]; then
-    log "red" "KILLING $containerId"
-    docker stop $containerId
-    #if imageId is not empty, remove image
-    if [[ -n $imageId ]]; then
-      log "red" "REMOVING $imageId"
-      docker rmi $imageId
-    fi
+  #remove _dev from container name
+  container=$(echo $1 | sed 's/_dev//g')
+
+  cname=$(docker ps | grep "$container" | awk -F "   " '{print $7}')
+  if [[ -n $cname ]]; then
+    log "red" "KILLING $cname"
+    docker stop $cname
   fi
 
   cname=$(docker ps | grep "0.0.0.0:$PORT" | awk -F "   " '{print $7}')
@@ -97,6 +88,8 @@ kill() {
     log "red" "KILLING $cname"
     docker stop $cname
   fi
+
+  docker system prune -f
 }
 sendNotification() {
   N_TITLE="${APP_NAME} - ${ENVIRONMENT} BUILDER"
@@ -283,13 +276,14 @@ pushToAWS() {
     exit 1
   fi
 
+  tag="${tag}-arm64"
   log "green" "TAG: $tag"
   log "yellow" "PUSH TO AWS ${APP_NAME}:$tag"
 
   #obfuscate
-  docker buildx create --use
-  docker buildx build --platform linux/amd64 --push -t ${APP_NAME}:"$tag" .
-  # docker build -t ${APP_NAME}:"$tag" .
+  # docker buildx create --use
+  # docker buildx build --platform linux/amd64 --push -t ${APP_NAME}:"$tag" .
+  docker build -t ${APP_NAME}:"$tag" .
   sendNotification "IMAGE Build" "Image ${APP_NAME}:$tag builded"
   #deobfuscate
 

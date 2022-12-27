@@ -9,7 +9,8 @@ return [
   ],
   'servidor' => env('SII_SERVER', 'maullin'),
   'ambiente' => env('SII_ENV', 'certificacion'),
-
+  //Storage paths
   'archivos_xml' => '/var/www/html/storage/app/xml/',
   'archivos_tmp' => '/var/www/html/storage/app/tmp/',
+  'archivos_certificacion' => '/var/www/html/storage/app/certificacion/',
 ];

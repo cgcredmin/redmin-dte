@@ -34,14 +34,28 @@ trait DteAuthTrait
       $this->nombreCert = $config->DTE_NOMBRE_CERT;
       $this->rutEmpresa = $config->DTE_RUT_EMPRESA;
       $this->nombreEmpresa = $config->DTE_NOMBRE_EMPRESA;
+      $this->giro = $config->DTE_GIRO;
+      $this->direccion = $config->DTE_DIRECCION;
+      $this->comuna = $config->DTE_COMUNA;
+      $this->actividad_economica = $config->DTE_ACT_ECONOMICA;
       $this->servidor = $config->SII_SERVER;
       $this->ambiente = $config->SII_ENV;
 
       $stringified = json_encode([
         'folios' => config('libredte.archivos_xml') . 'folios/',
         'dte' => config('libredte.archivos_xml') . 'dte/',
+        'certificacion' => config('libredte.archivos_certificacion'),
+        'intercambio' =>
+          config('libredte.archivos_certificacion') . 'intercambio/',
       ]);
       $this->rutas = json_decode($stringified, false);
+
+      //check if all paths exists, and if not, create them
+      foreach ($this->rutas as $ruta) {
+        if (!file_exists($ruta)) {
+          mkdir($ruta, 0777, true);
+        }
+      }
     }
 
     // trabajar en ambiente de certificación

@@ -147,6 +147,10 @@ class ConfigController extends Controller
       'DTE_NOMBRE_CERT' => 'string|min:6',
       'DTE_RUT_EMPRESA' => 'string|min:9|max:12',
       'DTE_NOMBRE_EMPRESA' => 'string|min:6',
+      'DTE_GIRO' => 'string|min:6',
+      'DTE_DIRECCION' => 'string|min:6',
+      'DTE_COMUNA' => 'string|min:6',
+      'DTE_ACT_ECONOMICA' => 'numeric|min:4',
     ];
 
     $this->validate($request, $rules);
@@ -188,6 +192,21 @@ class ConfigController extends Controller
     if ($request->input('DTE_NOMBRE_EMPRESA')) {
       $config->update([
         'DTE_NOMBRE_EMPRESA' => $request->input('DTE_NOMBRE_EMPRESA'),
+      ]);
+    }
+
+    if ($request->input('DTE_GIRO')) {
+      $config->update(['DTE_GIRO' => $request->input('DTE_GIRO')]);
+    }
+    if ($request->input('DTE_DIRECCION')) {
+      $config->update(['DTE_DIRECCION' => $request->input('DTE_DIRECCION')]);
+    }
+    if ($request->input('DTE_COMUNA')) {
+      $config->update(['DTE_COMUNA' => $request->input('DTE_COMUNA')]);
+    }
+    if ($request->input('DTE_ACT_ECONOMICA')) {
+      $config->update([
+        'DTE_ACT_ECONOMICA' => $request->input('DTE_ACT_ECONOMICA'),
       ]);
     }
 

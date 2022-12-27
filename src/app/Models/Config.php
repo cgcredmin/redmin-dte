@@ -20,6 +20,10 @@ class Config extends Model
     'DTE_NOMBRE_CERT',
     'DTE_RUT_EMPRESA',
     'DTE_NOMBRE_EMPRESA',
+    'DTE_GIRO',
+    'DTE_DIRECCION',
+    'DTE_COMUNA',
+    'DTE_ACT_ECONOMICA',
   ];
 
   public $timestamps = true;

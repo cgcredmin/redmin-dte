@@ -24,8 +24,9 @@ RUN apk add --no-cache npm
 RUN apk add --no-cache bash
 RUN apk add --no-cache npm
 RUN apk add --no-cache yarn
+RUN apk add --no-cache py3-pip
 
-# RUN sed -i 's/bin\/ash/bin\/bash/g' /etc/passwd
+RUN python -m pip install rich
 
 # Set the working directory to /app
 WORKDIR /var/www/html
@@ -72,5 +73,10 @@ RUN ln -sf /dev/stderr /var/log/nginx/error.log
 # Installing composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
-EXPOSE $PORT
+# Install dependencies
+RUN composer install
+
+EXPOSE 80 9000
+
+CMD ["python", "./init.py"]
 CMD ["supervisord", "-c", "/etc/supervisor.d/supervisord.ini"]

@@ -28,4 +28,16 @@ class Controller extends BaseController
     }
     return response()->json(['error' => ''], 400);
   }
+
+  public function encodeObjectToUTF8($object)
+  {
+    foreach ($object as $key => $value) {
+      if (is_array($value)) {
+        $object[$key] = $this->encodeObjectToUTF8($value);
+      } elseif (is_string($value)) {
+        $object[$key] = utf8_encode($value);
+      }
+    }
+    return $object;
+  }
 }

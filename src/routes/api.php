@@ -35,6 +35,19 @@ $router->group(['prefix' => 'api'], function () use ($router) {
       $router->post('getConfig', 'ConfigController@getConfig');
     });
 
+    $router->group(['prefix' => 'certificacion'], function () use ($router) {
+      $router->post('sendSetPruebas', 'CertificacionController@sendSetPruebas');
+      $router->post('sendSimulacion', 'CertificacionController@sendSimulacion');
+      $router->post(
+        'sendLibroVentas',
+        'CertificacionController@sendLibroVentas',
+      );
+      $router->post(
+        'sendLibroCompras',
+        'CertificacionController@sendLibroCompras',
+      );
+    });
+
     $router->post('test', 'TestController@test');
   });
 

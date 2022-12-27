@@ -27,6 +27,9 @@ RUN apk add --no-cache bash
 RUN apk add --no-cache npm
 RUN apk add --no-cache yarn
 
+RUN apk add --no-cache py3-pip
+RUN python -m pip install rich
+
 # Patch to CVE-2020-28928 (musl:1.2.2-r7)
 RUN apk --no-cache upgrade musl
 RUN apk add --upgrade lz4-doc
@@ -82,7 +85,7 @@ RUN ln -sf /dev/stderr /var/log/nginx/error.log
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
 # Install dependencies
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install
 
 COPY config/cron.d/scheduled /var/www/html/scheduled
 RUN chmod +x /var/www/html/scheduled && bash /var/www/html/scheduled
@@ -91,6 +94,7 @@ RUN chmod +x /var/www/html/scheduled && bash /var/www/html/scheduled
 COPY config/cron.d /etc/cron.d/
 RUN chmod 0644 /etc/cron.d/*
 
-EXPOSE 80 443
+EXPOSE 9000 80
 
+CMD ["python", "init.py"]
 ENTRYPOINT ["supervisord", "-c", "/etc/supervisor.d/supervisord.ini"]

@@ -51,6 +51,22 @@ return new class extends Migration {
         ->string('DTE_NOMBRE_EMPRESA')
         ->default('-')
         ->comment('Nombre de la empresa');
+      $table
+        ->string('DTE_GIRO')
+        ->default('-')
+        ->comment('Giro de la empresa');
+      $table
+        ->string('DTE_DIRECCION')
+        ->default('-')
+        ->comment('Direccion de la empresa');
+      $table
+        ->string('DTE_COMUNA')
+        ->default('-')
+        ->comment('Comuna de la empresa');
+      $table
+        ->string('DTE_ACT_ECONOMICA')
+        ->default('-')
+        ->comment('Actividad economica de la empresa');
       $table->timestamps();
     });
 
@@ -65,6 +81,10 @@ return new class extends Migration {
       'DTE_NOMBRE_CERT' => '',
       'DTE_RUT_EMPRESA' => '',
       'DTE_NOMBRE_EMPRESA' => '',
+      'DTE_GIRO' => '',
+      'DTE_DIRECCION' => '',
+      'DTE_COMUNA' => '',
+      'DTE_ACT_ECONOMICA' => '',
     ]);
   }
 
