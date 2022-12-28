@@ -31,28 +31,6 @@ RUN python -m pip install rich
 # Set the working directory to /app
 WORKDIR /var/www/html
 
-RUN docker-php-ext-install pdo pdo_mysql
-RUN docker-php-ext-enable pdo pdo_mysql
-
-RUN apk add --no-cache php-soap
-RUN apk add --no-cache php-xml
-
-# RUN set -eux
-RUN apk update
-RUN apk add libxml2-dev
-RUN apk add php8-soap
-
-RUN apk add --no-cache postgresql-dev
-RUN docker-php-ext-install soap
-RUN docker-php-ext-enable soap
-
-RUN apk add --no-cache gd libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev php-bcmath
-RUN docker-php-ext-install bcmath
-RUN docker-php-ext-enable bcmath
-
-RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg --with-webp
-RUN docker-php-ext-install gd
-
 # Configure supervisor
 RUN mkdir -p /etc/supervisor.d/
 COPY config/supervisord.ini /etc/supervisor.d/supervisord.ini
@@ -69,6 +47,26 @@ RUN mkdir -p /run/nginx/
 RUN touch /run/nginx/nginx.pid
 RUN ln -sf /dev/stdout /var/log/nginx/access.log
 RUN ln -sf /dev/stderr /var/log/nginx/error.log
+
+# RUN set -eux
+RUN apk update
+RUN apk add --no-cache postgresql-dev libxml2-dev php8-soap php-soap php-xml imap-dev php-imap \
+  gd libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev php-bcmath
+
+# Install the PHP pdo_mysql library
+RUN docker-php-ext-install pdo pdo_mysql && docker-php-ext-enable pdo pdo_mysql
+
+# Install the PHP soap library
+RUN docker-php-ext-install soap && docker-php-ext-enable soap
+
+# Install the PHP bcmath library
+RUN docker-php-ext-install bcmath && docker-php-ext-enable bcmath
+
+# Install the PHP gd library
+RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg --with-webp && docker-php-ext-install gd
+
+# Install the PHP imap library
+RUN docker-php-ext-configure imap --with-imap --with-imap-ssl && docker-php-ext-install imap
 
 # Installing composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer

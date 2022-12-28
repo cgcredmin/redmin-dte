@@ -50,14 +50,14 @@ class ConsultaEstadoDte extends ComandoBase
       exit(1);
     }
 
-    // dd($this->dteconfig);
+    // dd($this->firma);
 
     try {
       $token_path = $this->rutas->tmp . 'token.txt';
       $now = date('Ymd');
       $token = '';
 
-      $token = Autenticacion::getToken($this->firma);
+      $token = Autenticacion::getToken($this->dteconfig);
       file_put_contents($token_path, "$token;$now");
 
       $comprobaciones = collect(ComprobacionSii::all())->pluck(
@@ -75,8 +75,11 @@ class ConsultaEstadoDte extends ComandoBase
         $this->info('Estado: ' . $estado);
       }
     } catch (\Exception $e) {
-      // si hubo errores se muestran
-      $this->error(\sasco\LibreDTE\Log::readAll());
+      $this->error($e->getMessage());
+      // si hubo errores mostrar
+      foreach (\sasco\LibreDTE\Log::readAll() as $error) {
+        $this->error($error->msg);
+      }
     }
 
     $this->info('Consulta de DTEs finalizada');

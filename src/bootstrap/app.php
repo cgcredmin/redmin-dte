@@ -67,6 +67,7 @@ $app->configure('app');
 $app->configure('filesystems');
 $app->configure('libredte');
 $app->configure('database');
+$app->configure('imap');
 
 $libredte = config('libredte');
 
@@ -110,7 +111,7 @@ $app->routeMiddleware([
 |
 */
 
-// $app->register(App\Providers\AppServiceProvider::class);
+$app->register(App\Providers\AppServiceProvider::class);
 $app->register(App\Providers\AuthServiceProvider::class);
 // $app->register(App\Providers\EventServiceProvider::class);
 $app->register(Tymon\JWTAuth\Providers\LumenServiceProvider::class);
@@ -120,6 +121,7 @@ if (app()->environment('development')) {
 }
 $app->register(Milon\Barcode\BarcodeServiceProvider::class);
 // $app->register(Flipbox\LumenGenerator\LumenGeneratorServiceProvider::class);
+$app->register(Webklex\IMAP\Providers\LaravelServiceProvider::class);
 
 /*
 |--------------------------------------------------------------------------

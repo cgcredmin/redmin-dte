@@ -47,9 +47,9 @@ class RegistroCompraYVenta extends ComandoBase
     $overwrite = $this->option('overwrite') ?? false;
     $overwrite = $overwrite ? 'true' : 'false';
 
-    //SII_USER
     // SII_PASS
     $userPassword = $this->sii_pass;
+    // SII_USER
     $userName = $this->sii_user;
     $this->info(
       "UN=$userName UP=$userPassword MO=$month YE=$year OVERWRITE=$overwrite",
@@ -57,7 +57,7 @@ class RegistroCompraYVenta extends ComandoBase
 
     //execute nodejs script
     $output = shell_exec(
-      "UN=$userName UP=$userPassword MO=$month YE=$year OVERWRITE=$overwrite ./var/www/html/scrapper/RegistroCompraVenta",
+      "UN=$userName UP=$userPassword MO=$month YE=$year OVERWRITE=$overwrite /var/www/html/scrapper/RegistroCompraVentaScrapper",
     );
 
     if (str_starts_with($output, 'ERROR')) {

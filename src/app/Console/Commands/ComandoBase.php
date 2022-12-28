@@ -49,12 +49,14 @@ class ComandoBase extends Command
         $this->sii_user = $config->SII_USER;
         $this->sii_pass = $config->SII_PASS;
 
-        $stringified = json_encode([
-          'folios' => config('libredte.archivos_xml') . 'folios/',
-          'dte' => config('libredte.archivos_xml') . 'dte/',
-          'tmp' => config('libredte.archivos_tmp'),
-        ]);
-        $this->rutas = json_decode($stringified, false);
+        $this->rutas = setDirectories();
+
+        //check if all paths exists, and if not, create them
+        foreach ($this->rutas as $ruta) {
+          if (!file_exists($ruta)) {
+            mkdir($ruta, 0777, true);
+          }
+        }
       }
     }
   }

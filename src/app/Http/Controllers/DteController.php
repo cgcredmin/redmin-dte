@@ -16,6 +16,7 @@ use Milon\Barcode\DNS2D;
 
 use App\Models\Tempfiles;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Crypt;
 
 class DteController extends Controller
 {
@@ -317,7 +318,11 @@ class DteController extends Controller
       $xmlstring = Storage::get($filename);
 
       $stringXml = $track_id !== false ? base64_encode($xmlstring) : '';
-
+      // dd([
+      //   'trackId' => $track_id,
+      //   'xml' => $stringXml,
+      //   'timbre' => $timbre,
+      // ]);
       return response()->json(
         [
           'trackId' => $track_id,
@@ -355,12 +360,16 @@ class DteController extends Controller
     }
   }
 
-  public function obtenerPdf($hash, Request $request)
+  public function getTempLink(Request $request)
   {
+    $hash = $request->hash ?? '-1';
+    // dd($hash);
     $compo = ComprobacionSii::where('pdf', $hash)->first();
 
     if ($compo) {
-      $fileName = $compo->pdf . '.pdf';
+      $fileName = Crypt::decryptString($compo->pdf);
+      $fileName = str_replace($this->rutas->pdf, '', $fileName);
+      // dd($fileName);
 
       if (Storage::disk('pdfs')->exists($fileName) == false) {
         return response()->json(
@@ -397,7 +406,7 @@ class DteController extends Controller
           $path = Storage::disk('temp')->put($name, $file);
 
           $tf = TempFiles::create([
-            'nombre' => $file->getClientOriginalName(),
+            'nombre' => $fileName,
             'hash' => $hash,
             'ext' => $extension,
             'ruta' => $path,

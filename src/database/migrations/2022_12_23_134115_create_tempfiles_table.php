@@ -15,7 +15,7 @@ return new class extends Migration {
     Schema::create('tempfiles', function (Blueprint $table) {
       $table->id()->autoIncrement();
       $table->string('nombre');
-      $table->string('hash');
+      $table->mediumText('hash');
       $table->string('ext');
       $table->string('ruta');
       $table->dateTime('expires_at')->nullable(true);

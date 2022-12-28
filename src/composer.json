@@ -13,12 +13,14 @@
   "type": "project",
   "require": {
     "php": "^8.0",
+    "google/apiclient": "^2.13",
     "guzzlehttp/guzzle": "^7.5",
     "laravel/lumen-framework": "^9.0",
     "league/flysystem": "^3.11",
     "milon/barcode": "^9.0",
     "sasco/libredte": "^21.10",
-    "tymon/jwt-auth": "*"
+    "tymon/jwt-auth": "*",
+    "webklex/laravel-imap": "^4.0"
   },
   "require-dev": {
     "flipbox/lumen-generator": "^9.1",

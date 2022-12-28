@@ -54,3 +54,20 @@ if (!function_exists('str_random')) {
     return $string;
   }
 }
+
+function setDirectories()
+{
+  $stringified = json_encode([
+    'folios' => config('libredte.archivos_xml') . 'folios/',
+    'dte' => config('libredte.archivos_xml') . 'dte/',
+    'dte_ci' => config('libredte.archivos_xml') . 'dte/correointercambio/',
+    'certificacion' => config('libredte.archivos_certificacion'),
+    'intercambio' => config('libredte.archivos_certificacion') . 'intercambio/',
+    'tmp' => config('libredte.archivos_tmp'),
+    'pdf' => '/var/www/html/storage/app/pdf/',
+    'db' => '/var/www/html/storage/app/db/',
+    'tempfiles' => '/var/www/html/storage/app/tempfiles/',
+  ]);
+
+  return json_decode($stringified, false);
+}

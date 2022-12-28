@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use sasco\LibreDTE\Sii\Dte\Base\DteImpreso;
 use App\Http\Traits\DteDatosTrait;
+use Google\Client;
+use Google\Service\Gmail;
 
 use App\Models\Config;
 
@@ -220,5 +222,32 @@ class ConfigController extends Controller
     $config = Config::first();
 
     return response()->json($config, 200);
+  }
+
+  public function gmail()
+  {
+    // Set up the API client
+    $client = new Client();
+    $client->setApplicationName('My App');
+    $client->setScopes(Gmail::GMAIL_READONLY);
+    $client->setAuthConfig(env('GOOGLE_APPLICATION_CREDENTIALS'));
+    $client->setAccessType('offline');
+
+    // Prompt the user to authorize the app
+    $authUrl = $client->createAuthUrl();
+    print "Please visit this URL to authorize this app: $authUrl\n";
+    print 'Enter the authorization code: ';
+    $authCode = trim(fgets(STDIN));
+
+    // Exchange the authorization code for an access token
+    $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
+    $client->setAccessToken($accessToken);
+
+    // Check if the access token has expired
+    if ($client->isAccessTokenExpired()) {
+      // Refresh the access token if it has expired
+      $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+      $client->setAccessToken($client->getAccessToken());
+    }
   }
 }

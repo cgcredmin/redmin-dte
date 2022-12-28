@@ -14,7 +14,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
       $router->post('checkDocumento', 'DteController@comprobarDocumento');
       $router->post('checkDocumentoAv', 'DteController@comprobarDocumentoAv');
       $router->post('sendDocumento', 'DteController@enviaDocumento');
-      $router->post('getPdf/{hash}', 'DteController@obtenerPdf');
+      $router->get('getTempLink', 'DteController@getTempLink');
 
       $router->post('requestFolios', 'FoliosController@getFolios');
       $router->post('renewToken', 'Controller@renewToken');
@@ -33,6 +33,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
       $router->post('uploadCertOrFolio', 'ConfigController@upload');
       $router->post('setConfig', 'ConfigController@setConfig');
       $router->post('getConfig', 'ConfigController@getConfig');
+      $router->post('gmail', 'ConfigController@gmail');
     });
 
     $router->group(['prefix' => 'certificacion'], function () use ($router) {

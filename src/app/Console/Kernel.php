@@ -5,8 +5,9 @@ namespace App\Console;
 use App\Console\Commands\RegistroCompraYVenta;
 use App\Console\Commands\BorraArchivosTemporales;
 use App\Console\Commands\ConsultaEstadoDte;
-use App\Console\Commands\GenerarPDFCompras;
 use App\Console\Commands\RenovarToken;
+use App\Console\Commands\LeerCorreoIntercambio;
+
 use Illuminate\Console\Scheduling\Schedule;
 use Laravel\Lumen\Console\Kernel as ConsoleKernel;
 
@@ -20,9 +21,9 @@ class Kernel extends ConsoleKernel
   protected $commands = [
     RegistroCompraYVenta::class,
     ConsultaEstadoDte::class,
-    GenerarPDFCompras::class,
     RenovarToken::class,
     BorraArchivosTemporales::class,
+    LeerCorreoIntercambio::class,
   ];
 
   /**
@@ -39,6 +40,7 @@ class Kernel extends ConsoleKernel
 
     $schedule->command('redmin:rcv')->twiceDailyAt(0, 12, 0);
     $schedule->command('redmin:estadodte')->twiceDailyAt(1, 13, 0);
-    $schedule->command('redmin:generarpdfcompras')->twiceDailyAt(2, 14, 0);
+    $schedule->command('redmin:correointercambio')->twiceDailyAt(2, 14, 0);
+    // $schedule->command('redmin:generarpdfcompras')->twiceDailyAt(2, 14, 0);
   }
 }

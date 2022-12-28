@@ -40,7 +40,7 @@ return new class extends Migration {
         ->nullable()
         ->comment('XML generado por LibreDTE');
       $table
-        ->string('pdf')
+        ->mediumText('pdf')
         ->nullable()
         ->comment('Ruta del pdf generado por LibreDTE');
       $table->timestamps();
