@@ -74,7 +74,7 @@ RUN ln -sf /dev/stderr /var/log/nginx/error.log
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
 # Install dependencies
-RUN composer install
+# RUN composer update
 
 EXPOSE 80 9000
 
