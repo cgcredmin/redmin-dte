@@ -10,8 +10,7 @@ src/.env
 src/rcv
 src/**/node_modules
 src/.idea
-src/scrapper/rcv/files/*.json
-src/scrapper/rcv/localstorage/
+src/scrapper/
 src/cron.log
 src/supervisord.log
 src/supervisord.pid
@@ -20,3 +19,4 @@ src/vendor
 /web-scrapper
 .docker
 src/scrapper/RegistroCompraVentaScrapper
+src/.local-chromium
