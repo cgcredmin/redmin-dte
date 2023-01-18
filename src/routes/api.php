@@ -34,6 +34,7 @@ $router->group(["prefix" => "api"], function () use ($router) {
       $router->post("setConfig", "ConfigController@setConfig");
       $router->post("getConfig", "ConfigController@getConfig");
       $router->post("gmail", "ConfigController@gmail");
+      $router->post("getLogs", "ConfigController@getLogs");
     });
 
     $router->group(["prefix" => "certificacion"], function () use ($router) {

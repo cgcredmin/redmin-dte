@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use App\Models\Log;
 
 use App\Models\RegistroCompraVenta;
 
@@ -82,8 +83,16 @@ class RcvController extends Controller
         "Actualizados" => $actualizados,
         "Total" => $total . " de " . count($compras) . " recibidos",
       ];
+      Log::create([
+        "message" => "Registro de Compra y Venta recibido",
+      ]);
+
       return response()->json($data, 200);
     } catch (\Exception $e) {
+      Log::create([
+        "message" =>
+          "Error al recibir el registro de compra y venta: " . $e->getMessage(),
+      ]);
       return response()->json($e->getMessage(), 400);
     }
   }

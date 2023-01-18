@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Console\Commands\ComandoBase;
-use Illuminate\Support\Facades\Log;
+use App\Models\Log;
 use sasco\LibreDTE\Sii\Autenticacion;
 
 class RenovarToken extends ComandoBase
@@ -73,13 +73,19 @@ class RenovarToken extends ComandoBase
           return $e->msg . "\n\n";
         });
         $this->error($errors);
+        Log::create(["message" => "RenovarToken::Error:: " . $errors]);
         //delete file
         if (file_exists($token_path)) {
           unlink($token_path);
         }
+        exit(1);
       }
     } catch (\Exception $e) {
-      Log::error("RenovarToken >> " . $e->getMessage());
+      Log::create(["message" => "RenovarToken::Error:: " . $e->getMessage()]);
+      //delete file
+      if (file_exists($token_path)) {
+        unlink($token_path);
+      }
     }
   }
 }

@@ -4,9 +4,8 @@ namespace App\Console\Commands;
 
 use App\Console\Commands\ComandoBase;
 use App\Http\Traits\DteAuthTrait;
-use App\Models\RegistroCompraVenta;
 
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;
@@ -50,37 +49,54 @@ class RegistroCompraYVenta extends ComandoBase
     $overwrite = $this->option("overwrite") ?? false;
     $overwrite = $overwrite ? "true" : "false";
 
+    $starttime = date("H:i:s");
+    $startday = date("Y-m-d");
+    $message = "RCV::{$startday}/{$starttime}/{{END}}::Scraping RCV finalizado";
+
     if ($this->sii_user == null || $this->sii_pass == null) {
       $this->error("SII_USER o SII_PASS no definidos");
+      Log::create(["message" => "RCV::Error::SII_USER o SII_PASS no definidos"]);
       return;
     }
 
-    $env_params = "UN={$this->sii_pass} UP={$this->sii_user} MO=$month YE=$year OVERWRITE=$overwrite";
-    $this->info($env_params);
+    try {
+      $env_params = "UN={$this->sii_pass} UP={$this->sii_user} MO=$month YE=$year OVERWRITE=$overwrite";
+      $this->info($env_params);
 
-    //url for microservice to send data
-    $endpoint_url = env("APP_URL") . "/api/upload/rcv";
-    //scrapper microservice url
-    $scrapper_url = env("SII_SCRAPPER_URL");
+      //url for microservice to send data
+      $endpoint_url = env("APP_URL") . "/api/upload/rcv";
+      //scrapper microservice url
+      $scrapper_url = env("SII_SCRAPPER_URL");
 
-    //make a request to sii-scrapper microservice
-    $client = new Client();
-    $headers = [
-      "Content-Type" => "application/json",
-    ];
-    $body = json_encode([
-      "passord" => $this->sii_pass,
-      "username" => $this->sii_user,
-      "month" => $month,
-      "year" => $year,
-      "endpoint" => [
-        "url" => $endpoint_url,
-        "method" => "POST",
-        "name" => "data",
-      ],
-    ]);
-    $request = new Request("POST", $scrapper_url, $headers, $body);
-    $res = $client->sendAsync($request)->wait();
-    $this->info($res->getBody());
+      //make a request to sii-scrapper microservice
+      $client = new Client();
+      $headers = [
+        "Content-Type" => "application/json",
+      ];
+      $body = json_encode([
+        "passord" => $this->sii_pass,
+        "username" => $this->sii_user,
+        "month" => $month,
+        "year" => $year,
+        "endpoint" => [
+          "url" => $endpoint_url,
+          "method" => "POST",
+          "name" => "data",
+        ],
+      ]);
+      $request = new Request("POST", $scrapper_url, $headers, $body);
+      $res = $client->sendAsync($request)->wait();
+      $body = $res->getBody();
+      $message = str_replace("{{END}}", date("H:i:s"), $message);
+      Log::create([
+        "message" => $message . " " . $body,
+      ]);
+      $this->info($message);
+    } catch (\Exception $e) {
+      $this->error($e->getMessage());
+      Log::create([
+        "message" => "RCV::Error::" . $e->getMessage(),
+      ]);
+    }
   }
 }

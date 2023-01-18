@@ -2,7 +2,7 @@ FROM php:8.2-fpm-alpine3.16
 
 Maintainer Carlos Guajardo cguajardo@redmin.cl
 
-RUN apk update && apk upgrade
+# RUN apk update && apk upgrade
 
 RUN echo "UTC" >/etc/timezone
 ENV ALPINE_MIRROR "http://dl-cdn.alpinelinux.org/alpine"
@@ -17,7 +17,6 @@ RUN apk add --no-cache curl
 RUN apk add --no-cache sqlite
 RUN apk add --no-cache nginx
 RUN apk add --no-cache supervisor
-RUN apk add --no-cache chromium chromium-chromedriver
 RUN apk add nginx-mod-http-headers-more
 RUN apk add --no-cache npm
 RUN apk add --no-cache bash
