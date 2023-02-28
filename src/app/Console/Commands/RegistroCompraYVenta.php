@@ -18,7 +18,7 @@ class RegistroCompraYVenta extends ComandoBase
    *
    * @var string
    */
-  protected $signature = "redmin:rcv {--overwrite} {--year=} {--month=}";
+  protected $signature = "redmin:rcv {--overwrite} {--year=} {--month=} {--wts=all}";
 
   /**
    * The console command description.
@@ -48,6 +48,13 @@ class RegistroCompraYVenta extends ComandoBase
     $month = str_pad($this->option("month") ?? date("m"), 2, "0", STR_PAD_LEFT);
     $overwrite = $this->option("overwrite") ?? false;
     $overwrite = $overwrite ? "true" : "false";
+    $wts = strtoupper($this->option("wts") ?? "all");
+    // check if wts is valid, must have any value: all, venta, compra
+    if (!in_array($wts, ["ALL", "VENTAS", "COMPRAS", "C", "V"])) {
+      $this->error("wts debe ser: all, venta o compra");
+      Log::create(["message" => "RCV::Error::wts debe ser: all, venta o compra"]);
+      return;
+    }
 
     $starttime = date("H:i:s");
     $startday = date("Y-m-d");
@@ -66,7 +73,7 @@ class RegistroCompraYVenta extends ComandoBase
       //url for microservice to send data
       $endpoint_url = env("APP_URL") . "/api/upload/rcv";
       //scrapper microservice url
-      $scrapper_url = env("SII_SCRAPPER_URL");
+      $scrapper_url = env("SII_SCRAPPER_URL") . "/getRCV";
 
       //make a request to sii-scrapper microservice
       $client = new Client();
@@ -74,10 +81,11 @@ class RegistroCompraYVenta extends ComandoBase
         "Content-Type" => "application/json",
       ];
       $body = json_encode([
-        "passord" => $this->sii_pass,
+        "password" => $this->sii_pass,
         "username" => $this->sii_user,
         "month" => $month,
         "year" => $year,
+        "wts" => $wts,
         "endpoint" => [
           "url" => $endpoint_url,
           "method" => "POST",

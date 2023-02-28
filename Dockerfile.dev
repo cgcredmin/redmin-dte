@@ -24,7 +24,7 @@ RUN apk add --no-cache npm
 RUN apk add --no-cache yarn
 RUN apk add --no-cache py3-pip
 
-RUN python -m pip install rich
+RUN python3 -m pip install rich
 
 # Set the working directory to /app
 WORKDIR /var/www/html

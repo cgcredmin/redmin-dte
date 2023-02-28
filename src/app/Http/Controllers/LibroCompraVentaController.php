@@ -83,17 +83,35 @@ class LibroCompraVentaController extends Controller
   public function getVentas(Request $request)
   {
     $ventas = RegistroCompraVenta::where("registro", "venta");
+    $hasFilter = false;
     if ($request->has("dcvRutEmisor")) {
       $ventas = $ventas->where("dcvRutEmisor", $request->input("dcvRutEmisor"));
+      $hasFilter = true;
     }
     if ($request->has("rsmnTipoDocInteger")) {
       $ventas = $ventas->where(
         "rsmnTipoDocInteger",
         $request->input("rsmnTipoDocInteger")
       );
+      $hasFilter = true;
     }
     if ($request->has("dcvFecCreacion")) {
       $ventas = $ventas->where("dcvFecCreacion", ">=", $request->input("dcvFecCreacion"));
+      $hasFilter = true;
+    }
+    if ($request->has("periodo")) {
+      // validate periodo has the format YYYY-MM
+      $this->validate($request, [
+        "periodo" => "required|date_format:Y-m",
+      ]);
+      $fecha = $request->periodo . "-01 00:00:00";
+      $ventas = $ventas->where("dcvFecCreacion", ">=", $fecha);
+      $hasFilter = true;
+    }
+
+    if (!$hasFilter) {
+      // if no filter, then return the last 50 records
+      $ventas = $ventas->take(50);
     }
 
     $ventas = $ventas->orderBy("dcvFecCreacion", "ASC")->get();
