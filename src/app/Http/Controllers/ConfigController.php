@@ -56,6 +56,7 @@ class ConfigController extends Controller
             "desde" => $desde,
             "hasta" => $hasta,
             "fecha" => $fecha,
+            "tipo" => $tipo_folio,
           ],
           200
         );
