@@ -29,51 +29,43 @@ class RcvController extends Controller
 
       $compras = $json->COMPRA ?? [];
       $ventas = $json->VENTA ?? [];
-      //join both arrays
-      $compras = array_merge($compras, $ventas);
 
       $creados = 0;
       $actualizados = 0;
+      // COMPRAS
       foreach ($compras as $value) {
-        // dd($value);
-        $value->detFchDoc = $value->detFchDoc
-          ? Carbon::createFromFormat("d/m/Y", $value->detFchDoc)->format("Y-m-d H:i:s")
-          : null;
-        $value->detFecAcuse = $value->detFecAcuse
-          ? Carbon::createFromFormat("d/m/Y H:i:s", $value->detFecAcuse)->format(
-            "Y-m-d H:i:s"
-          )
-          : null;
-        $value->detFecReclamado = $value->detFecReclamado
-          ? Carbon::createFromFormat("d/m/Y H:i:s", $value->detFecReclamado)->format(
-            "Y-m-d H:i:s"
-          )
-          : null;
-        $value->detFecRecepcion = $value->detFecRecepcion
-          ? Carbon::createFromFormat("d/m/Y H:i:s", $value->detFecRecepcion)->format(
-            "Y-m-d H:i:s"
-          )
-          : null;
-        $value->fechaActivacionAnotacion = $value->fechaActivacionAnotacion
-          ? Carbon::createFromFormat(
-            "d/m/Y H:i:s",
-            $value->fechaActivacionAnotacion
-          )->format("Y-m-d H:i:s")
-          : null;
+        self::parseDates($value);
+        $value->registro = "COMPRA";
 
-        $value->registro = $x = RegistroCompraVenta::updateOrCreate(
+        $x = RegistroCompraVenta::updateOrCreate(
           [
             "dhdrCodigo" => $value->dhdrCodigo,
             "detCodigo" => $value->detCodigo,
             "detNroDoc" => $value->detNroDoc,
+            "registro" => $value->registro,
           ],
           collect($value)->toArray()
         );
-        if ($x->wasRecentlyCreated) {
-          $creados++;
-        } elseif ($x->wasChanged()) {
-          $actualizados++;
-        }
+
+        self::updateCounters($creados, $actualizados, $x);
+      }
+
+      // VENTAS
+      foreach ($ventas as $value) {
+        self::parseDates($value);
+        $value->registro = "VENTA";
+
+        $x = RegistroCompraVenta::updateOrCreate(
+          [
+            "dhdrCodigo" => $value->dhdrCodigo,
+            "detCodigo" => $value->detCodigo,
+            "detNroDoc" => $value->detNroDoc,
+            "registro" => $value->registro,
+          ],
+          collect($value)->toArray()
+        );
+
+        self::updateCounters($creados, $actualizados, $x);
       }
 
       $total = $creados + $actualizados;
@@ -84,7 +76,7 @@ class RcvController extends Controller
         "Total" => $total . " de " . count($compras) . " recibidos",
       ];
       Log::create([
-        "message" => "Registro de Compra y Venta recibido",
+        "message" => "Registro de Compra y Venta recibido: " . implode(", ", $data),
       ]);
 
       return response()->json($data, 200);
@@ -94,6 +86,42 @@ class RcvController extends Controller
           "Error al recibir el registro de compra y venta: " . $e->getMessage(),
       ]);
       return response()->json($e->getMessage(), 400);
+    }
+  }
+
+  private function parseDates(&$value)
+  {
+    $value->detFchDoc = $value->detFchDoc
+      ? Carbon::createFromFormat("d/m/Y", $value->detFchDoc)->format("Y-m-d H:i:s")
+      : null;
+    $value->detFecAcuse = $value->detFecAcuse
+      ? Carbon::createFromFormat("d/m/Y H:i:s", $value->detFecAcuse)->format(
+        "Y-m-d H:i:s"
+      )
+      : null;
+    $value->detFecReclamado = $value->detFecReclamado
+      ? Carbon::createFromFormat("d/m/Y H:i:s", $value->detFecReclamado)->format(
+        "Y-m-d H:i:s"
+      )
+      : null;
+    $value->detFecRecepcion = $value->detFecRecepcion
+      ? Carbon::createFromFormat("d/m/Y H:i:s", $value->detFecRecepcion)->format(
+        "Y-m-d H:i:s"
+      )
+      : null;
+    $value->fechaActivacionAnotacion = $value->fechaActivacionAnotacion
+      ? Carbon::createFromFormat("d/m/Y H:i:s", $value->fechaActivacionAnotacion)->format(
+        "Y-m-d H:i:s"
+      )
+      : null;
+  }
+
+  private function updateCounters(&$creados, &$actualizados, $x)
+  {
+    if ($x->wasRecentlyCreated) {
+      $creados++;
+    } else {
+      $actualizados++;
     }
   }
 }

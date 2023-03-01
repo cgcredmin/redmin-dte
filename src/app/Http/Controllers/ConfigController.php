@@ -44,11 +44,18 @@ class ConfigController extends Controller
         $xml = simplexml_load_file($file->getRealPath());
         $tipo_folio = (string) $xml->CAF->DA->TD;
 
+        $desde = (string) $xml->CAF->DA->RNG->D;
+        $hasta = (string) $xml->CAF->DA->RNG->H;
+        $fecha = (string) $xml->CAF->DA->FA;
+
         // store file in '/var/www/html/storage/app/xml/folios'
         $path = $file->storeAs("xml/folios", $tipo_folio . ".xml");
         return response()->json(
           [
             "message" => "Folio " . $tipo_folio . " subido correctamente. ",
+            "desde" => $desde,
+            "hasta" => $hasta,
+            "fecha" => $fecha,
           ],
           200
         );
