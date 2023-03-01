@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Console\Commands\ComandoBase;
 use App\Http\Traits\DteAuthTrait;
 
-use Illuminate\Support\Facades\Log;
+use App\Models\Log;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;

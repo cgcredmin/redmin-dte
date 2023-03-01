@@ -68,14 +68,12 @@ class LibroCompraVentaController extends Controller
       $compras = $compras->with("comprobacion_sii");
     }
 
-    $compras = $compras->get();
+    $compras = $compras->orderBy("detFchDoc")->get();
     // dd($compras);
     // parse some columns
     foreach ($compras as $compra) {
       $compra->detTipoDoc = $this->tipos[$compra->detTipoDoc];
     }
-
-    $compras = collect($compras)->sortBy("detFchDoc");
 
     return response()->json($compras);
   }
