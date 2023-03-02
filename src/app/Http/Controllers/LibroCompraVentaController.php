@@ -36,25 +36,34 @@ class LibroCompraVentaController extends Controller
     // dd($request->all());
     $compras = RegistroCompraVenta::whereRaw("registro = 'compra'");
 
+    $hasFilters = false;
+
     //filters rut,folio,tipo,estado,desde,hasta
     if ($request->has("rut") && $request->rut != "") {
       $compras = $compras->where("detRutDoc", $request->input("rut"));
+      $hasFilters = true;
     }
     if ($request->has("folio") && $request->folio != "") {
       $compras = $compras->where("detNroDoc", $request->input("folio"));
+      $hasFilters = true;
     }
     if ($request->has("tipo") && $request->tipo != "") {
       $compras = $compras->where("detTipoDoc", $request->input("tipo"));
+      $hasFilters = true;
     }
     if ($request->has("desde") && $request->desde != "") {
       // format input date to YYYY-MM-DD using carbon
       $desde = Carbon::parse($request->input("desde"))->format("Y-m-d");
-      $compras = $compras->whereRaw("DATE(detFchDoc) >= '$desde'");
+      $compras = $compras->whereRaw(
+        "DATE(detFchDoc) >= DATE('$desde 00:00:00                                                                                                               ')"
+      );
+      $hasFilters = true;
     }
     if ($request->has("hasta") && $request->hasta != "") {
       // format input date to YYYY-MM-DD
       $hasta = Carbon::parse($request->input("hasta"))->format("Y-m-d");
-      $compras = $compras->whereRaw("DATE(detFchDoc) <= '$hasta'");
+      $compras = $compras->whereRaw("DATE(detFchDoc) <= DATE('$hasta')");
+      $hasFilters = true;
     }
 
     if ($request->has("estado") && $request->estado != "") {
@@ -64,8 +73,14 @@ class LibroCompraVentaController extends Controller
           $q->where("estado", $estado);
         },
       ]);
+      $hasFilters = true;
     } else {
       $compras = $compras->with("comprobacion_sii");
+    }
+
+    if (!$hasFilters) {
+      // if no filter, then return the last 50 records
+      $compras = $compras->take(50);
     }
 
     $compras = $compras->orderBy("detFchDoc")->get();

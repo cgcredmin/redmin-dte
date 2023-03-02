@@ -35,7 +35,7 @@ class RcvController extends Controller
       // COMPRAS
       foreach ($compras as $value) {
         self::parseDates($value);
-        $value->registro = "COMPRA";
+        $value->registro = "compra";
 
         $x = RegistroCompraVenta::updateOrCreate(
           [
@@ -53,7 +53,7 @@ class RcvController extends Controller
       // VENTAS
       foreach ($ventas as $value) {
         self::parseDates($value);
-        $value->registro = "VENTA";
+        $value->registro = "venta";
 
         $x = RegistroCompraVenta::updateOrCreate(
           [
