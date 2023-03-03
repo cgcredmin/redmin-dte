@@ -92,33 +92,31 @@ class LibroCompraVentaController extends Controller
   {
     //filters rut,folio,tipo,estado,desde,hasta
     if ($request->has("rut") && $request->rut != "") {
-      $table = $table->where("detRutDoc", $request->input("rut"));
+      $table = $table->where("detRutDoc", $request->rut);
       $hasFilters = true;
     }
 
     if ($request->has("folio") && $request->folio != "") {
-      $table = $table->where("detNroDoc", $request->input("folio"));
+      $table = $table->where("detNroDoc", $request->folio);
       $hasFilters = true;
     }
 
     if ($request->has("tipo") && $request->tipo != "") {
-      $table = $table->where("detTipoDoc", $request->input("tipo"));
+      $table = $table->where("detTipoDoc", $request->tipo);
       $hasFilters = true;
     }
 
     if ($request->has("desde") && $request->desde != "") {
       // format input date to YYYY-MM-DD using carbon
-      $desde = Carbon::parse($request->input("desde"))->format("Y-m-d");
-      $table = $table->whereRaw(
-        "DATE(detFchDoc) >= DATE('$desde 00:00:00                                                                                                               ')"
-      );
+      $desde = Carbon::parse($request->desde)->format("Y-m-d");
+      $table = $table->whereRaw("DATE(detFchDoc) >= '$desde'");
       $hasFilters = true;
     }
 
     if ($request->has("hasta") && $request->hasta != "") {
       // format input date to YYYY-MM-DD
-      $hasta = Carbon::parse($request->input("hasta"))->format("Y-m-d");
-      $table = $table->whereRaw("DATE(detFchDoc) <= DATE('$hasta')");
+      $hasta = Carbon::parse($request->hasta)->format("Y-m-d");
+      $table = $table->whereRaw("DATE(detFchDoc) <= '$hasta'");
       $hasFilters = true;
     }
 
@@ -135,16 +133,7 @@ class LibroCompraVentaController extends Controller
     }
 
     if ($request->has("periodo")) {
-      // validate periodo has the format YYYY-MM
-      $this->validate($request, [
-        "periodo" => "required|date_format:Y-m",
-      ]);
-      $startDate = $request->periodo . "-01 00:00:00";
-      $endDate = $request->periodo . "-31 23:59:59";
-
-      $table = $table->whereRaw(
-        "DATE(detFchDoc) >= DATE('$startDate') AND DATE(detFchDoc) <= DATE('$endDate)"
-      );
+      $table = $table->whereRaw("strftime('%Y-%m', detFchDoc) = '{$request->periodo}'");
       $hasFilters = true;
     }
   }
