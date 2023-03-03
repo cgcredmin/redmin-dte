@@ -25,7 +25,7 @@ class LibroCompraVentaController extends Controller
     $rules = [
       "rut" => "numeric|exists:registro_compra_venta,detRutDoc",
       "folio" => "numeric|exists:registro_compra_venta,detNroDoc",
-      "tipo" => "numeric|in:" . $this->tipos,
+      "tipo" => "numeric|in:" . $tipos,
       "estado" => "string|in:" . implode(",", $this->getKeysDteEstados()),
       "desde" => "date",
       "hasta" => "date",
@@ -66,7 +66,7 @@ class LibroCompraVentaController extends Controller
     $rules = [
       "rut" => "numeric|exists:registro_compra_venta,detRutDoc",
       "folio" => "numeric|exists:registro_compra_venta,detNroDoc",
-      "tipo" => "numeric|in:" . $this->tipos,
+      "tipo" => "numeric|in:" . $tipos,
       "estado" => "string|in:" . implode(",", $this->getKeysDteEstados()),
       "desde" => "date",
       "hasta" => "date",

@@ -154,6 +154,8 @@ class ConfigController extends Controller
       "DTE_DIRECCION" => "string|min:6",
       "DTE_COMUNA" => "string|min:6",
       "DTE_ACT_ECONOMICA" => "numeric|min:4",
+      "DTE_FECHA_RESOL" => 'date:format("Y-m-d")',
+      "DTE_NUM_RESOL" => "numeric|min:0",
     ];
 
     $this->validate($request, $rules);
@@ -197,7 +199,6 @@ class ConfigController extends Controller
         "DTE_NOMBRE_EMPRESA" => $request->input("DTE_NOMBRE_EMPRESA"),
       ]);
     }
-
     if ($request->input("DTE_GIRO")) {
       $config->update(["DTE_GIRO" => $request->input("DTE_GIRO")]);
     }
@@ -210,6 +211,16 @@ class ConfigController extends Controller
     if ($request->input("DTE_ACT_ECONOMICA")) {
       $config->update([
         "DTE_ACT_ECONOMICA" => $request->input("DTE_ACT_ECONOMICA"),
+      ]);
+    }
+    if ($request->input("DTE_FECHA_RESOL")) {
+      $config->update([
+        "DTE_FECHA_RESOL" => $request->input("DTE_FECHA_RESOL"),
+      ]);
+    }
+    if ($request->input("DTE_NUM_RESOL")) {
+      $config->update([
+        "DTE_NUM_RESOL" => $request->input("DTE_NUM_RESOL"),
       ]);
     }
 
