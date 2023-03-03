@@ -13,21 +13,15 @@ class LibroCompraVentaController extends Controller
   use DteImpreso;
   use DteDatosTrait;
 
-  private $tipos = "";
-
-  public function __construct()
+  public function getCompras(Request $request)
   {
-    $this->tipos = implode(
+    $tipos = implode(
       ",",
       collect($this->tipos)
         ->except(0)
         ->keys()
         ->toArray()
     );
-  }
-
-  public function getCompras(Request $request)
-  {
     $rules = [
       "rut" => "numeric|exists:registro_compra_venta,detRutDoc",
       "folio" => "numeric|exists:registro_compra_venta,detNroDoc",
@@ -62,6 +56,13 @@ class LibroCompraVentaController extends Controller
 
   public function getVentas(Request $request)
   {
+    $tipos = implode(
+      ",",
+      collect($this->tipos)
+        ->except(0)
+        ->keys()
+        ->toArray()
+    );
     $rules = [
       "rut" => "numeric|exists:registro_compra_venta,detRutDoc",
       "folio" => "numeric|exists:registro_compra_venta,detNroDoc",
