@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9123171629a196292ec82f6b434f717c",
+    "content-hash": "c939d2fa7c4b16117f8a14913b1f4eab",
     "packages": [
         {
             "name": "brick/math",
@@ -5895,16 +5895,16 @@
         },
         {
             "name": "webklex/laravel-imap",
-            "version": "4.0.0",
+            "version": "4.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Webklex/laravel-imap.git",
-                "reference": "d537af1f0bb86ace70ea84bae9e4b2e60ab9b955"
+                "reference": "9038139b8789e60c998eb389d419d41b969f2713"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Webklex/laravel-imap/zipball/d537af1f0bb86ace70ea84bae9e4b2e60ab9b955",
-                "reference": "d537af1f0bb86ace70ea84bae9e4b2e60ab9b955",
+                "url": "https://api.github.com/repos/Webklex/laravel-imap/zipball/9038139b8789e60c998eb389d419d41b969f2713",
+                "reference": "9038139b8789e60c998eb389d419d41b969f2713",
                 "shasum": ""
             },
             "require": {
@@ -5913,7 +5913,7 @@
                 "ext-mbstring": "*",
                 "laravel/framework": ">=5.0.0",
                 "php": ">=5.5.9",
-                "webklex/php-imap": ">=4.0.0"
+                "webklex/php-imap": "^4.1.2"
             },
             "type": "library",
             "extra": {
@@ -5959,7 +5959,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Webklex/laravel-imap/issues",
-                "source": "https://github.com/Webklex/laravel-imap/tree/4.0.0"
+                "source": "https://github.com/Webklex/laravel-imap/tree/4.1.2"
             },
             "funding": [
                 {
@@ -5971,7 +5971,7 @@
                     "type": "ko_fi"
                 }
             ],
-            "time": "2022-08-19T21:09:48+00:00"
+            "time": "2023-01-18T18:33:20+00:00"
         },
         {
             "name": "webklex/php-imap",

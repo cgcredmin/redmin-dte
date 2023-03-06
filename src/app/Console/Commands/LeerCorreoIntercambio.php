@@ -45,7 +45,19 @@ class LeerCorreoIntercambio extends ComandoBase
     $this->info('GenerarPDFCompras >> Inicio');
 
     /** @var \Webklex\PHPIMAP\Client $client */
-    $client = Client::account('default');
+    // $client = Client::account('default');
+    $_cl = new Client();
+    $client = $_cl::make([
+      'host' => 'outlook.office365.com',
+      'port' => 993,
+      'encryption' => 'tls',
+      'validate_cert' => true,
+      'username' => 'dte@empresasieg.com',
+      'password' => 'Roq44670',
+      'protocol' => 'imap',
+      // 'authentication' => 'oauth',
+    ]);
+    // dd($client);
 
     //Connect to the IMAP Server
     $client->connect();
@@ -106,10 +118,7 @@ class LeerCorreoIntercambio extends ComandoBase
                 $rcv = RegistroCompraVenta::find($rcv->id);
                 $make_pdf = true;
                 if ($rcv->comprobacion_sii) {
-                  if (
-                    $rcv->comprobacion_sii->xml &&
-                    $rcv->comprobacion_sii->pdf
-                  ) {
+                  if ($rcv->comprobacion_sii->xml && $rcv->comprobacion_sii->pdf) {
                     $make_pdf = false;
                   }
                   if (!$rcv->comprobacion_sii->xml) {
