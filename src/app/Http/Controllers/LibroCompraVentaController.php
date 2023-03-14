@@ -13,23 +13,27 @@ class LibroCompraVentaController extends Controller
   use DteImpreso;
   use DteDatosTrait;
 
-  public function getCompras(Request $request)
+  private function getTiposImploded()
   {
-    $tipos = implode(
-      ",",
+    return implode(
+      ',',
       collect($this->tipos)
         ->except(0)
         ->keys()
-        ->toArray()
+        ->toArray(),
     );
+  }
+
+  public function getCompras(Request $request)
+  {
     $rules = [
-      "rut" => "numeric|exists:registro_compra_venta,detRutDoc",
-      "folio" => "numeric|exists:registro_compra_venta,detNroDoc",
-      "tipo" => "numeric|in:" . $tipos,
-      "estado" => "string|in:" . implode(",", $this->getKeysDteEstados()),
-      "desde" => "date",
-      "hasta" => "date",
-      "periodo" => "date_format:Y-m",
+      'rut' => 'numeric|exists:registro_compra_venta,detRutDoc',
+      'folio' => 'numeric|exists:registro_compra_venta,detNroDoc',
+      'tipo' => 'numeric|in:' . $this->getTiposImploded(),
+      'estado' => 'string|in:' . implode(',', $this->getKeysDteEstados()),
+      'desde' => 'date',
+      'hasta' => 'date',
+      'periodo' => 'date_format:Y-m',
     ];
 
     $this->validate($request, $rules);
@@ -37,14 +41,14 @@ class LibroCompraVentaController extends Controller
     $compras = RegistroCompraVenta::whereRaw("registro = 'compra'");
     $hasFilters = false;
 
-    $this->filterTable($request, $compras, $hasFilters);
+    $this->tableFilters($request, $compras, $hasFilters);
 
     if (!$hasFilters) {
       // if no filter, then return the last 50 records
       $compras = $compras->take(50);
     }
 
-    $compras = $compras->orderBy("detFchDoc")->get();
+    $compras = $compras->orderBy('detFchDoc')->get();
     // dd($compras);
     // parse some columns
     foreach ($compras as $compra) {
@@ -56,21 +60,14 @@ class LibroCompraVentaController extends Controller
 
   public function getVentas(Request $request)
   {
-    $tipos = implode(
-      ",",
-      collect($this->tipos)
-        ->except(0)
-        ->keys()
-        ->toArray()
-    );
     $rules = [
-      "rut" => "numeric|exists:registro_compra_venta,detRutDoc",
-      "folio" => "numeric|exists:registro_compra_venta,detNroDoc",
-      "tipo" => "numeric|in:" . $tipos,
-      "estado" => "string|in:" . implode(",", $this->getKeysDteEstados()),
-      "desde" => "date",
-      "hasta" => "date",
-      "periodo" => "date_format:Y-m",
+      'rut' => 'numeric|exists:registro_compra_venta,detRutDoc',
+      'folio' => 'numeric|exists:registro_compra_venta,detNroDoc',
+      'tipo' => 'numeric|in:' . $this->getTiposImploded(),
+      'estado' => 'string|in:' . implode(',', $this->getKeysDteEstados()),
+      'desde' => 'date',
+      'hasta' => 'date',
+      'periodo' => 'date_format:Y-m',
     ];
 
     $this->validate($request, $rules);
@@ -78,62 +75,62 @@ class LibroCompraVentaController extends Controller
     $ventas = RegistroCompraVenta::whereRaw("registro = 'venta'");
     $hasFilters = false;
 
-    $this->filterTable($request, $ventas, $hasFilters);
+    $this->tableFilters($request, $ventas, $hasFilters);
 
     if (!$hasFilters) {
       // if no filter, then return the last 50 records
       $ventas = $ventas->take(50);
     }
 
-    $ventas = $ventas->orderBy("detFchDoc", "ASC")->get();
+    $ventas = $ventas->orderBy('detFchDoc', 'ASC')->get();
     return response()->json($ventas);
   }
 
-  private function filterTable($request, &$table, &$hasFilters)
+  private function tableFilters($request, &$table, &$hasFilters)
   {
     //filters rut,folio,tipo,estado,desde,hasta
-    if ($request->has("rut") && $request->rut != "") {
-      $table = $table->where("detRutDoc", $request->rut);
+    if ($request->has('rut') && $request->rut != '') {
+      $table = $table->where('detRutDoc', $request->rut);
       $hasFilters = true;
     }
 
-    if ($request->has("folio") && $request->folio != "") {
-      $table = $table->where("detNroDoc", $request->folio);
+    if ($request->has('folio') && $request->folio != '') {
+      $table = $table->where('detNroDoc', $request->folio);
       $hasFilters = true;
     }
 
-    if ($request->has("tipo") && $request->tipo != "") {
-      $table = $table->where("detTipoDoc", $request->tipo);
+    if ($request->has('tipo') && $request->tipo != '') {
+      $table = $table->where('detTipoDoc', $request->tipo);
       $hasFilters = true;
     }
 
-    if ($request->has("desde") && $request->desde != "") {
+    if ($request->has('desde') && $request->desde != '') {
       // format input date to YYYY-MM-DD using carbon
-      $desde = Carbon::parse($request->desde)->format("Y-m-d");
+      $desde = Carbon::parse($request->desde)->format('Y-m-d');
       $table = $table->whereRaw("DATE(detFchDoc) >= '$desde'");
       $hasFilters = true;
     }
 
-    if ($request->has("hasta") && $request->hasta != "") {
+    if ($request->has('hasta') && $request->hasta != '') {
       // format input date to YYYY-MM-DD
-      $hasta = Carbon::parse($request->hasta)->format("Y-m-d");
+      $hasta = Carbon::parse($request->hasta)->format('Y-m-d');
       $table = $table->whereRaw("DATE(detFchDoc) <= '$hasta'");
       $hasFilters = true;
     }
 
-    if ($request->has("estado") && $request->estado != "") {
+    if ($request->has('estado') && $request->estado != '') {
       $estado = $request->estado;
       $table = $table->with([
-        "comprobacion_sii" => function ($q) use ($estado) {
-          $q->where("estado", $estado);
+        'comprobacion_sii' => function ($q) use ($estado) {
+          $q->where('estado', $estado);
         },
       ]);
       $hasFilters = true;
     } else {
-      $table = $table->with("comprobacion_sii");
+      $table = $table->with('comprobacion_sii');
     }
 
-    if ($request->has("periodo")) {
+    if ($request->has('periodo')) {
       $table = $table->whereRaw("strftime('%Y-%m', detFchDoc) = '{$request->periodo}'");
       $hasFilters = true;
     }

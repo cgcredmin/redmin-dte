@@ -13,7 +13,7 @@ class RcvController extends Controller
   public function upload(Request $request)
   {
     $rules = [
-      "data" => "required",
+      'data' => 'required',
     ];
 
     $this->validate($request, $rules);
@@ -24,7 +24,7 @@ class RcvController extends Controller
 
       //if there is no compra or venta, return
       if (!isset($json->COMPRA) && !isset($json->VENTA)) {
-        return response()->json(["message" => "No hay datos"], 400);
+        return response()->json(['message' => 'No hay datos'], 400);
       }
 
       $compras = $json->COMPRA ?? [];
@@ -35,19 +35,19 @@ class RcvController extends Controller
       // COMPRAS
       foreach ($compras as $value) {
         self::parseDates($value);
-        $value->registro = "compra";
-        if ($value->tipo == "" || $value->tipo == null) {
-          $value->tipo = "registro";
+        $value->registro = 'compra';
+        if ($value->tipo == '' || $value->tipo == null) {
+          $value->tipo = 'registro';
         }
 
         $x = RegistroCompraVenta::updateOrCreate(
           [
-            "dhdrCodigo" => $value->dhdrCodigo,
-            "detCodigo" => $value->detCodigo,
-            "detNroDoc" => $value->detNroDoc,
-            "registro" => $value->registro,
+            'dhdrCodigo' => $value->dhdrCodigo,
+            'detCodigo' => $value->detCodigo,
+            'detNroDoc' => $value->detNroDoc,
+            'registro' => $value->registro,
           ],
-          collect($value)->toArray()
+          collect($value)->toArray(),
         );
 
         self::updateCounters($creados, $actualizados, $x);
@@ -56,19 +56,19 @@ class RcvController extends Controller
       // VENTAS
       foreach ($ventas as $value) {
         self::parseDates($value);
-        $value->registro = "venta";
-        if ($value->tipo == "" || $value->tipo == null) {
-          $value->tipo = "registro";
+        $value->registro = 'venta';
+        if ($value->tipo == '' || $value->tipo == null) {
+          $value->tipo = 'registro';
         }
 
         $x = RegistroCompraVenta::updateOrCreate(
           [
-            "dhdrCodigo" => $value->dhdrCodigo,
-            "detCodigo" => $value->detCodigo,
-            "detNroDoc" => $value->detNroDoc,
-            "registro" => $value->registro,
+            'dhdrCodigo' => $value->dhdrCodigo,
+            'detCodigo' => $value->detCodigo,
+            'detNroDoc' => $value->detNroDoc,
+            'registro' => $value->registro,
           ],
-          collect($value)->toArray()
+          collect($value)->toArray(),
         );
 
         self::updateCounters($creados, $actualizados, $x);
@@ -77,19 +77,19 @@ class RcvController extends Controller
       $total = $creados + $actualizados;
 
       $data = [
-        "Creados" => $creados,
-        "Actualizados" => $actualizados,
-        "Total" => $total . " de " . count($compras) . " recibidos",
+        'Creados' => $creados,
+        'Actualizados' => $actualizados,
+        'Total' => $total . ' de ' . count($compras) . ' recibidos',
       ];
       Log::create([
-        "message" => "Registro de Compra y Venta recibido: " . implode(", ", $data),
+        'message' => 'Registro de Compra y Venta recibido: ' . json_encode($data),
       ]);
 
       return response()->json($data, 200);
     } catch (\Exception $e) {
       Log::create([
-        "message" =>
-          "Error al recibir el registro de compra y venta: " . $e->getMessage(),
+        'message' =>
+          'Error al recibir el registro de compra y venta: ' . $e->getMessage(),
       ]);
       return response()->json($e->getMessage(), 400);
     }
@@ -98,26 +98,26 @@ class RcvController extends Controller
   private function parseDates(&$value)
   {
     $value->detFchDoc = $value->detFchDoc
-      ? Carbon::createFromFormat("d/m/Y", $value->detFchDoc)->format("Y-m-d H:i:s")
+      ? Carbon::createFromFormat('d/m/Y', $value->detFchDoc)->format('Y-m-d H:i:s')
       : null;
     $value->detFecAcuse = $value->detFecAcuse
-      ? Carbon::createFromFormat("d/m/Y H:i:s", $value->detFecAcuse)->format(
-        "Y-m-d H:i:s"
+      ? Carbon::createFromFormat('d/m/Y H:i:s', $value->detFecAcuse)->format(
+        'Y-m-d H:i:s',
       )
       : null;
     $value->detFecReclamado = $value->detFecReclamado
-      ? Carbon::createFromFormat("d/m/Y H:i:s", $value->detFecReclamado)->format(
-        "Y-m-d H:i:s"
+      ? Carbon::createFromFormat('d/m/Y H:i:s', $value->detFecReclamado)->format(
+        'Y-m-d H:i:s',
       )
       : null;
     $value->detFecRecepcion = $value->detFecRecepcion
-      ? Carbon::createFromFormat("d/m/Y H:i:s", $value->detFecRecepcion)->format(
-        "Y-m-d H:i:s"
+      ? Carbon::createFromFormat('d/m/Y H:i:s', $value->detFecRecepcion)->format(
+        'Y-m-d H:i:s',
       )
       : null;
     $value->fechaActivacionAnotacion = $value->fechaActivacionAnotacion
-      ? Carbon::createFromFormat("d/m/Y H:i:s", $value->fechaActivacionAnotacion)->format(
-        "Y-m-d H:i:s"
+      ? Carbon::createFromFormat('d/m/Y H:i:s', $value->fechaActivacionAnotacion)->format(
+        'Y-m-d H:i:s',
       )
       : null;
   }

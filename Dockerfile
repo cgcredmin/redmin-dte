@@ -64,6 +64,10 @@ RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg --with-w
 # Install the PHP imap library
 RUN docker-php-ext-configure imap --with-imap --with-imap-ssl && docker-php-ext-install imap
 
+#Install PHP extension zip
+RUN apk add libzip-dev
+RUN docker-php-ext-install zip && docker-php-ext-enable zip
+
 # Installing composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 

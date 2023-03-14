@@ -14,8 +14,9 @@
   "require": {
     "php": "^8.0",
     "guzzlehttp/guzzle": "^7.5",
-    "laravel/lumen-framework": "^9.0",
+    "laravel/lumen-framework": "^9.1",
     "league/flysystem": "^3.11",
+    "league/flysystem-aws-s3-v3": "^3.12",
     "milon/barcode": "^9.0",
     "sasco/libredte": "^21.10",
     "tymon/jwt-auth": "*",

@@ -10,6 +10,10 @@ use Illuminate\Support\Carbon;
 
 use App\Models\Log;
 use App\Models\Config;
+use App\Models\Tempfiles;
+
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ConfigController extends Controller
 {
@@ -74,12 +78,18 @@ class ConfigController extends Controller
         'text/plain',
       ];
       if (!in_array($mime, $mimes)) {
-        return response()->json(['error' => 'Tipo de archivo no permitido'], 400);
+        return response()->json(
+          ['error' => 'Tipo de archivo no permitido'],
+          400,
+        );
       }
 
       $password = $request->input('password');
       if ($password === '') {
-        return response()->json(['error' => 'Contraseña no puede estar vacía'], 400);
+        return response()->json(
+          ['error' => 'Contraseña no puede estar vacía'],
+          400,
+        );
       }
 
       $certs = [];
@@ -88,7 +98,8 @@ class ConfigController extends Controller
       if (openssl_pkcs12_read($filecontent, $certs, $password) === false) {
         return response()->json(
           [
-            'error' => 'La contraseña propocionada no corresponde al certificado',
+            'error' =>
+              'La contraseña propocionada no corresponde al certificado',
           ],
           400,
         );
@@ -325,6 +336,14 @@ class ConfigController extends Controller
 
   public function uploadDataBase(Request $request)
   {
+    // only if DB_CONNECTION is sqlite
+    if (env('DB_CONNECTION') != 'sqlite') {
+      return response()->json(
+        ['errors' => 'La base de datos no es sqlite'],
+        400,
+      );
+    }
+
     $rules = [
       'archivo' => 'required|file',
     ];
@@ -358,6 +377,53 @@ class ConfigController extends Controller
     unlink(storage_path('app/db/uploaded.sqlite'));
 
     return response()->json(['message' => 'Base de datos actualizada'], 200);
+  }
+
+  /**
+   * Download the database as a compressed zip file
+   */
+  public function downloadDatabase()
+  {
+    // only if DB_CONNECTION is sqlite
+    if (env('DB_CONNECTION') != 'sqlite') {
+      $database = $this->backupSQLDB();
+      if (!$database) {
+        return response()->json(
+          ['errors' => 'No se pudo crear la copia de seguridad'],
+          400,
+        );
+      }
+
+      return response()->json($database);
+    } else {
+      $file = storage_path('app/db/redmin_dte.sqlite');
+
+      // compress the database file
+      $zip = new \ZipArchive();
+      if (
+        $zip->open(storage_path('app/db/redmin_dte.zip'), \ZipArchive::CREATE)
+      ) {
+        // generate a random password for the zip file
+        $hash = md5(uniqid(rand(), true));
+        $zip->addFile($file, 'redmin_dte.sqlite');
+        $zip->setEncryptionName($file, \ZipArchive::EM_AES_256, $hash);
+        $zip->close();
+
+        $tempfile = Tempfiles::create([
+          'nombre' => 'redmin_dte.zip',
+          'ruta' => storage_path('app/db/redmin_dte.zip'),
+          'ext' => 'zip',
+          'hash' => $hash,
+        ]);
+
+        return response()->json(['data' => $tempfile], 200);
+      }
+
+      return response()->json(
+        ['message' => 'No se pudo comprimir la base de datos'],
+        400,
+      );
+    }
   }
 
   private function checkDataBase($file)
@@ -395,5 +461,46 @@ class ConfigController extends Controller
     }
 
     return true;
+  }
+
+  private function backupSQLDB()
+  {
+    // Nombre de la base de datos a respaldar
+    $databaseName = DB::getDatabaseName();
+
+    // Nombre del archivo de backup
+    $backupFileName = $databaseName . '_' . date('Y-m-d_H-i-s') . '.sql';
+
+    // Ruta del archivo de backup temporal
+    $backupFilePath = storage_path('app/db/' . $backupFileName);
+
+    // Comando para generar el backup de la base de datos
+    $command = sprintf(
+      'mysqldump --user=%s --password=%s --host=%s %s > %s',
+      env('DB_USERNAME'),
+      env('DB_PASSWORD'),
+      env('DB_HOST'),
+      $databaseName,
+      $backupFilePath,
+    );
+
+    // Ejecutar el comando
+    exec($command);
+
+    Storage::disk('backups')->put(
+      $backupFileName,
+      file_get_contents($backupFilePath),
+    );
+
+    // Eliminar el archivo de backup temporal
+    unlink($backupFilePath);
+
+    //obtener link temporal desde S3
+    $temp_url = Storage::disk('backups')->temporaryUrl(
+      $backupFileName,
+      now()->addMinutes(5),
+    );
+
+    return $temp_url;
   }
 }

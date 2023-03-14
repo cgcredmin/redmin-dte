@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 
 use App\Models\Tempfiles;
 use Storage;
-use Illuminate\Support\Facades\Log;
+use App\Models\Log;
 
 class BorraArchivosTemporales extends Command
 {
@@ -15,14 +15,14 @@ class BorraArchivosTemporales extends Command
    *
    * @var string
    */
-  protected $signature = "redmin:borratemporales";
+  protected $signature = 'redmin:borratemporales';
 
   /**
    * The console command description.
    *
    * @var string
    */
-  protected $description = "Elimina los archivos temporales de la carpeta storage/app/temp";
+  protected $description = 'Elimina los archivos temporales de la carpeta storage/app/temp';
 
   /**
    * Create a new command instance.
@@ -41,18 +41,19 @@ class BorraArchivosTemporales extends Command
    */
   public function handle()
   {
-    $files = Tempfiles::where("expires_at", "<", date("Y-m-d H:i:s"))->get();
+    $files = Tempfiles::where('expires_at', '<', date('Y-m-d H:i:s'))->get();
 
     if ($files->count() > 0) {
       foreach ($files as $file) {
-        if (Storage::disk("temp")->exists($file->ruta)) {
-          Storage::disk("temp")->delete($file->ruta);
+        if (Storage::disk('temp')->exists($file->ruta)) {
+          Storage::disk('temp')->delete($file->ruta);
         }
         $file->delete();
       }
     }
-    Log::notice(
-      "CMD_EXEC::BorraArchivosTemporales::" . count($files) . " archivos borrados"
-    );
+    Log::create([
+      'message' =>
+        'CMD_EXEC::BorraArchivosTemporales::' . count($files) . ' archivos borrados',
+    ]);
   }
 }

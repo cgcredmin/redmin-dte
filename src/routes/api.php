@@ -1,8 +1,5 @@
 <?php
 
-use App\Http\Controllers\AuthController;
-use Illuminate\Support\Facades\Route;
-
 $router->group(['prefix' => 'api'], function () use ($router) {
   $router->post('login', 'AuthController@login');
   $router->post('logout', 'AuthController@logout');
@@ -36,6 +33,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
       $router->post('gmail', 'ConfigController@gmail');
       $router->post('getLogs', 'ConfigController@getLogs');
       $router->post('uploadDataBase', 'ConfigController@uploadDataBase');
+      $router->post('downloadDataBase', 'ConfigController@downloadDataBase');
     });
 
     $router->group(['prefix' => 'certificacion'], function () use ($router) {
