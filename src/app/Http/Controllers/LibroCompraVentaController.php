@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+ini_set('memory_limit', '512M');
+
 use App\Http\Traits\DteDatosTrait;
 use Illuminate\Http\Request;
 use App\Models\RegistroCompraVenta;
