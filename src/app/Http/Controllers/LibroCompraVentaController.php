@@ -88,14 +88,14 @@ class LibroCompraVentaController extends Controller
     if ($request->has('desde') && $request->desde != '') {
       // format input date to YYYY-MM-DD using carbon
       $desde = Carbon::parse($request->desde)->format('Y-m-d');
-      $table = $table->whereDate("detFchDoc >= '$desde'");
+      $table = $table->whereDate('detFchDoc', '>=', $desde);
       $hasFilters = true;
     }
 
     if ($request->has('hasta') && $request->hasta != '') {
       // format input date to YYYY-MM-DD
       $hasta = Carbon::parse($request->hasta)->format('Y-m-d');
-      $table = $table->whereDate("detFchDoc <= '$hasta'");
+      $table = $table->whereDate('detFchDoc', '<=', $hasta);
       $hasFilters = true;
     }
 
