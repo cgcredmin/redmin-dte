@@ -12,12 +12,16 @@ use Webklex\IMAP\Facades\Client;
 use App\Models\RegistroCompraVenta;
 class LeerCorreoIntercambio extends ComandoBase
 {
+  protected $attachment_total = 0;
+  protected $attachment_pdf = 0;
+  protected $attachment_xml = 0;
+  protected $attachment_match = 0;
   /**
    * The name and signature of the console command.
    *
    * @var string
    */
-  protected $signature = 'redmin:correo';
+  protected $signature = 'redmin:correo {--read-all}';
 
   /**
    * The console command description.
@@ -44,7 +48,12 @@ class LeerCorreoIntercambio extends ComandoBase
 
   public function handle()
   {
-    $this->info('GenerarPDFCompras >> Inicio');
+    $read_all = $this->option('read-all');
+    if ($read_all) {
+      $this->info('GenerarPDFCompras >> Leyendo todo el correo');
+    } else {
+      $this->info('GenerarPDFCompras >> Leyendo solo correos nuevos');
+    }
 
     /** @var \Webklex\PHPIMAP\Client $client */
     $client = Client::account('default');
@@ -55,214 +64,180 @@ class LeerCorreoIntercambio extends ComandoBase
 
     //Get all Mailboxes
     /** @var \Webklex\PHPIMAP\Support\FolderCollection $folders */
-    $folders = $client->getFolders();
-    $inbox = $client->getFolder('INBOX');
-    // dd($folders);
 
-    //Loop through every Mailbox
-    /** @var \Webklex\PHPIMAP\Folder $folder */
-
-    $this->processPDF($inbox);
-
-    // foreach ($folders as $folder) {
-    //   // $this->processXML($folder);
-    //   $this->processPDF($folder);
-    // }
-
-    $this->info('GenerarPDFCompras >> Fin');
-  }
-
-  private function processXML($folder)
-  {
-    //Get all Messages of the current Mailbox $folder
-    /** @var \Webklex\PHPIMAP\Support\MessageCollection $messages */
-    $messages = $folder
-      ->query()
-      ->text('Content-Type: text/xml')
-      ->get();
-
-    /** @var \Webklex\PHPIMAP\Message $message */
-    foreach ($messages as $message) {
-      //get the xml attachment
-      $attachments = $message->getAttachments();
-      foreach ($attachments as $attachment) {
-        // dd($attachment);
-        if ($attachment->content_type == 'text/xml') {
-          file_put_contents(
-            $this->rutas->dte_ci . $attachment->name,
-            $attachment->content,
-          );
-
-          try {
-            //read xml and get Caratula
-            $xml = simplexml_load_string($attachment->content);
-
-            $doc = $xml->SetDTE->DTE->Documento->Encabezado;
-            // dd($caratula);
-            $rutEmisor = (string) $doc->Emisor->RUTEmisor;
-            $rutEmisor = substr($rutEmisor, 0, -2);
-            $rutReceptor = (string) $doc->Receptor->RUTRecep;
-            $rutReceptor = substr($rutReceptor, 0, -2);
-            $fechaEmision = (string) $doc->IdDoc->FchEmis;
-            $montoNeto = (int) $doc->Totales->MntNeto;
-            $tipoDTE = (int) $doc->IdDoc->TipoDTE;
-            $folio = (int) $doc->IdDoc->Folio;
-
-            //find registro_compra_venta with the given data
-            $rcv = DB::table('registro_compra_venta')
-              ->whereRaw(
-                "detRutDoc='$rutEmisor' AND 
-                  detFchDoc='$fechaEmision' AND 
-                  detMntNeto='$montoNeto' AND 
-                  detTipoDoc='$tipoDTE' AND 
-                  detNroDoc='$folio' ",
-              )
-              ->first();
-
-            if ($rcv) {
-              $rcv = RegistroCompraVenta::find($rcv->id);
-              $make_pdf = true;
-              if ($rcv->comprobacion_sii) {
-                if (
-                  $rcv->comprobacion_sii->xml &&
-                  $rcv->comprobacion_sii->pdf
-                ) {
-                  $make_pdf = false;
-                }
-                if (!$rcv->comprobacion_sii->xml) {
-                  $make_pdf = true;
-                }
-              }
-
-              if (!$make_pdf) {
-                continue;
-              }
-              //make pdf from xml
-              $xml_hash = Crypt::encryptString(
-                $this->rutas->dte_ci . $attachment->name,
-              );
-              $pdf_hash = $this->generar_pdf($attachment->content);
-              if ($pdf_hash !== null) {
-                $pdf_hash = Crypt::encryptString($pdf_hash);
-              }
-              // dd($pdf_hash, $xml_hash);
-              if ($rcv->comprobacion_sii) {
-                $rcv->comprobacion_sii->xml = $xml_hash;
-                $rcv->comprobacion_sii->pdf = $pdf_hash;
-                $rcv->comprobacion_sii->save();
-              } else {
-                $rcv->comprobacion_sii()->create([
-                  'xml' => $xml_hash,
-                  'pdf' => $pdf_hash,
-                ]);
-              }
-            }
-          } catch (\Exception $e) {
-            Log::error($e->getMessage());
-          }
-        }
-      }
+    if (!$read_all) {
+      $messages = $client
+        ->getFolder('INBOX')
+        ->query()
+        ->unseen()
+        ->get();
+    } else {
+      $messages = $client
+        ->getFolder('INBOX')
+        ->query()
+        ->all()
+        ->setFetchOrder('desc')
+        ->setFetchOrderDesc()
+        ->fetchOrderDesc()
+        ->get();
     }
-  }
-
-  private function processPDF($folder)
-  {
-    $folios = [];
-    $csv = [];
-    $messages = $folder
-      ->query()
-      ->text('Content-Type: application/pdf')
-      ->get();
 
     $this->info(
       'GenerarPDFCompras >> Procesando ' . $messages->count() . ' mensajes',
     );
 
-    foreach ($messages as $key => $message) {
-      //get the xml attachment
+    foreach ($messages as $message) {
       $attachments = $message->getAttachments();
-      $this->info(
-        'GenerarPDFCompras >> Procesando ' . $key . ' de ' . $messages->count(),
-      );
+      $this->attachment_total += $attachments->count();
       foreach ($attachments as $attachment) {
-        // dd($attachment);
-        if ($attachment->content_type == 'application/pdf') {
-          $filePath = $this->rutas->pdf . $attachment->name;
-
-          if (!file_exists($filePath)) {
-            file_put_contents($filePath, $attachment->content);
-          }
-
-          //get data from pdf filename
-          $data = $this->getDataFromFilename($attachment->name);
-          $this->line(
-            "GenerarPDFCompras >> Procesando $key de " .
-              $messages->count() .
-              ' - ' .
-              json_encode($data),
-          );
-          $folios[] = $data['folio'];
-          $csv[] = $data;
-
-          try {
-            //find registro_compra_venta with the given data
-            $rcv = DB::table('registro_compra_venta')
-              ->whereRaw(
-                "detRutDoc='$data[rutEmisor]' AND 
-                  detTipoDoc='$data[tipoDte]' AND 
-                  detNroDoc='$data[folio]'",
-              )
-              ->first();
-            if (!$rcv) {
-              $this->error(
-                "GenerarPDFCompras >> No se encontro registro de compra venta para $key de " .
-                  $messages->count() .
-                  ' - ' .
-                  json_encode($data),
-              );
-            } else {
-              $this->info(
-                "GenerarPDFCompras >> Se encontro registro de compra venta para $key de " .
-                  $messages->count() .
-                  ' - ' .
-                  json_encode($data),
-              );
-              $rcv = RegistroCompraVenta::find($rcv->id);
-              $hash = Crypt::encryptString(
-                $this->rutas->pdf . $attachment->name,
-              );
-              // dd($pdf_hash, $xml_hash);
-              if ($rcv->comprobacion_sii) {
-                $rcv->comprobacion_sii->xml = '';
-                $rcv->comprobacion_sii->pdf = $hash;
-                $rcv->comprobacion_sii->save();
-              } else {
-                $rcv->comprobacion_sii()->create([
-                  'xml' => '',
-                  'pdf' => $hash,
-                ]);
-              }
-            }
-          } catch (\Exception $e) {
-            Log::error($e->getMessage());
-          }
-        }
+        // if ($attachments->count() >= 2) {
+        //   dd([
+        //     'content_type' => $attachment->content_type,
+        //     'mime_type' => $attachment->getMimeType(),
+        //     'name' => $attachment->getName(),
+        //   ]);
+        // }
+        $this->processXMLAttachment($attachment);
+        $this->processPDFAttachment($attachment);
       }
-
-      $this->info("============================================ \n");
     }
 
-    // $query =
-    //   'SELECT * FROM registro_compra_venta WHERE detNroDoc IN (' .
-    //   implode(',', $folios) .
-    //   ')';
-    // $this->info($query);
+    $this->info('GenerarPDFCompras >> Fin');
 
-    // create CSV file from $csv
-    $csv_file = 'DaCSV.csv';
-    $fp = fopen($csv_file, 'w');
-    foreach ($csv as $fields) {
-      fputcsv($fp, $fields);
+    $this->info(
+      "GenerarPDFCompras >> Total de archivos: $this->attachment_total",
+    );
+    $this->info(
+      "GenerarPDFCompras >> Total de archivos PDF: $this->attachment_pdf",
+    );
+    $this->info(
+      "GenerarPDFCompras >> Total de archivos XML: $this->attachment_xml",
+    );
+    $this->info(
+      "GenerarPDFCompras >> Total de archivos que coinciden con una compra o venta en DB: $this->attachment_match",
+    );
+  }
+
+  private function processXMLAttachment($attachment)
+  {
+    if ($attachment->getMimeType() == 'text/xml') {
+      $this->attachment_xml++;
+      $filename = $this->rutas->dte_ci . $attachment->name;
+      if (!file_exists($filename)) {
+        file_put_contents($filename, $attachment->content);
+      }
+
+      try {
+        //read xml and get Caratula
+        $xml = simplexml_load_string($attachment->content);
+
+        $doc = $xml->SetDTE->DTE->Documento->Encabezado;
+        // dd($caratula);
+        $rutEmisor = (string) $doc->Emisor->RUTEmisor;
+        $rutEmisor = substr($rutEmisor, 0, -2);
+        $rutReceptor = (string) $doc->Receptor->RUTRecep;
+        $rutReceptor = substr($rutReceptor, 0, -2);
+        $fechaEmision = (string) $doc->IdDoc->FchEmis;
+        $montoNeto = (int) $doc->Totales->MntNeto;
+        $tipoDTE = (int) $doc->IdDoc->TipoDTE;
+        $folio = (int) $doc->IdDoc->Folio;
+
+        //find registro_compra_venta with the given data
+        $rcv = DB::table('registro_compra_venta')
+          ->whereRaw(
+            "detRutDoc='$rutEmisor' AND 
+                  detFchDoc='$fechaEmision' AND 
+                  detMntNeto='$montoNeto' AND 
+                  detTipoDoc='$tipoDTE' AND 
+                  detNroDoc='$folio' ",
+          )
+          ->first();
+
+        if ($rcv) {
+          $this->attachment_match++;
+          $rcv = RegistroCompraVenta::find($rcv->id);
+          $make_pdf = true;
+          if ($rcv->comprobacion_sii) {
+            if ($rcv->comprobacion_sii->xml && $rcv->comprobacion_sii->pdf) {
+              $make_pdf = false;
+            }
+            if (!$rcv->comprobacion_sii->xml) {
+              $make_pdf = true;
+            }
+          }
+
+          if (!$make_pdf) {
+            return;
+          }
+          //make pdf from xml
+          $xml_hash = Crypt::encryptString($filename);
+          $pdf_hash = $this->generar_pdf($attachment->content);
+          if ($pdf_hash !== null) {
+            $pdf_hash = Crypt::encryptString($pdf_hash);
+          }
+          // dd($pdf_hash, $xml_hash);
+          if ($rcv->comprobacion_sii) {
+            $rcv->comprobacion_sii->xml = $xml_hash;
+            $rcv->comprobacion_sii->pdf = $pdf_hash;
+            $rcv->comprobacion_sii->save();
+          } else {
+            $rcv->comprobacion_sii()->create([
+              'xml' => $xml_hash,
+              'pdf' => $pdf_hash,
+            ]);
+          }
+        }
+      } catch (\Exception $e) {
+        Log::error($e->getMessage());
+      }
+    }
+  }
+
+  private function processPDFAttachment($attachment)
+  {
+    // dd($attachment);
+    if ($attachment->getMimeType() == 'application/pdf') {
+      $this->attachment_pdf++;
+      $filePath = $this->rutas->pdf . $attachment->name;
+
+      if (!file_exists($filePath)) {
+        file_put_contents($filePath, $attachment->content);
+      }
+
+      //get data from pdf filename
+      $data = $this->getDataFromFilename($attachment->name);
+
+      $folios[] = $data['folio'];
+      $csv[] = $data;
+
+      try {
+        //find registro_compra_venta with the given data
+        $rcv = DB::table('registro_compra_venta')
+          ->whereRaw(
+            "detRutDoc='$data[rutEmisor]' AND 
+                  detTipoDoc='$data[tipoDte]' AND 
+                  detNroDoc='$data[folio]'",
+          )
+          ->first();
+        if ($rcv) {
+          $this->attachment_match++;
+          $rcv = RegistroCompraVenta::find($rcv->id);
+          $hash = Crypt::encryptString($this->rutas->pdf . $attachment->name);
+          // dd($pdf_hash, $xml_hash);
+          if ($rcv->comprobacion_sii) {
+            $rcv->comprobacion_sii->xml = '';
+            $rcv->comprobacion_sii->pdf = $hash;
+            $rcv->comprobacion_sii->save();
+          } else {
+            $rcv->comprobacion_sii()->create([
+              'xml' => '',
+              'pdf' => $hash,
+            ]);
+          }
+        }
+      } catch (\Exception $e) {
+        Log::error($e->getMessage());
+      }
     }
   }
 

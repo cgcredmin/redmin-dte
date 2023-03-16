@@ -26,6 +26,8 @@ $router->group(['prefix' => 'api'], function () use ($router) {
       $router->post('getVentas', 'LibroCompraVentaController@getVentas');
     });
 
+    $router->post('compras', 'LibroCompraVentaController@getCompras');
+
     $router->group(['prefix' => 'config'], function () use ($router) {
       $router->post('uploadCertOrFolio', 'ConfigController@upload');
       $router->post('setConfig', 'ConfigController@setConfig');
@@ -39,8 +41,14 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->group(['prefix' => 'certificacion'], function () use ($router) {
       $router->post('sendSetPruebas', 'CertificacionController@sendSetPruebas');
       $router->post('sendSimulacion', 'CertificacionController@sendSimulacion');
-      $router->post('sendLibroVentas', 'CertificacionController@sendLibroVentas');
-      $router->post('sendLibroCompras', 'CertificacionController@sendLibroCompras');
+      $router->post(
+        'sendLibroVentas',
+        'CertificacionController@sendLibroVentas',
+      );
+      $router->post(
+        'sendLibroCompras',
+        'CertificacionController@sendLibroCompras',
+      );
     });
 
     $router->post('test', 'TestController@test');

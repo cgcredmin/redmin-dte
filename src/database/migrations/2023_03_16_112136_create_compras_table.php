@@ -1,0 +1,47 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+  /**
+   * Run the migrations.
+   *
+   * @return void
+   */
+  public function up()
+  {
+    Schema::create('compras', function (Blueprint $table) {
+      $table->id();
+      $table->string('rut_emisor')->comment('RUT del emisor del DTE');
+      $table->string('rut_receptor')->comment('RUT del receptor del DTE');
+      $table->date('fecha_emision')->comment('Fecha de emisión del DTE');
+      $table->double('monto_neto')->comment('Monto neto del DTE');
+      $table->integer('tipo_dte')->comment('Tipo de DTE');
+      $table->integer('folio')->comment('Folio del DTE');
+      $table->date('fecha_resolucion')->comment('Fecha de resolución del SII');
+      $table->double('iva')->comment('IVA del DTE');
+      $table->double('monto_total')->comment('Monto total del DTE');
+      $table
+        ->string('xml')
+        ->nullable()
+        ->comment('Ruta del XML');
+      $table
+        ->unsignedInteger('comprobacion_sii_id')
+        ->nullable()
+        ->comment('ID de la comprobación del SII');
+      $table->timestamps();
+    });
+  }
+
+  /**
+   * Reverse the migrations.
+   *
+   * @return void
+   */
+  public function down()
+  {
+    Schema::dropIfExists('compras');
+  }
+};
