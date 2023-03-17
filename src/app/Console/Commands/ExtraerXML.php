@@ -87,6 +87,7 @@ class ExtraerXML extends ComandoBase
     $this->info('ExtraerXML >> Procesando ' . $messages->count() . ' mensajes');
 
     foreach ($messages as $message) {
+      // dd($message);
       $attachments = $message->getAttachments();
       $this->attachment_total += $attachments->count();
       foreach ($attachments as $attachment) {
@@ -111,7 +112,7 @@ class ExtraerXML extends ComandoBase
 
   private function processXMLAttachment($attachment)
   {
-    // dd($attachment->getMimeType());
+    // dd($attachment->getMessage());
     if ($attachment->getMimeType() == 'text/xml') {
       $this->attachment_xml++;
       $hashedName =
@@ -139,12 +140,17 @@ class ExtraerXML extends ComandoBase
         $IVA = (int) $doc->Totales->IVA;
         $MontoTotal = (int) $doc->Totales->MntTotal;
 
+        //calcular monto exento (MntExe)
+        $MntExe = (int) $doc->Totales->MntExe;
+
         $direccionEmisor = [
           'direccion' => (string) $doc->Emisor->DirOrigen,
           'comuna' => (string) $doc->Emisor->CmnaOrigen,
           'ciudad' => (string) $doc->Emisor->CiudadOrigen,
         ];
         [$rutSinDv, $dv] = explode('-', $rutEmisor);
+
+        $detalle = json_encode($xml->SetDTE->DTE->Documento->Detalle);
 
         //update contribuyente
         $contribuyente = Contribuyentes::where('rut', $rutSinDv)->first();
@@ -188,12 +194,15 @@ class ExtraerXML extends ComandoBase
           'razon_social_emisor' => (string) $doc->Emisor->RznSoc ?? '',
           'rut_receptor' => $rutReceptor,
           'fecha_emision' => $fechaEmision,
+          'fecha_recepcion' => date('Y-m-d H:i:s'),
           'monto_neto' => $montoNeto,
+          'monto_exento' => $MntExe,
           'tipo_dte' => $tipoDTE,
           'folio' => $folio,
           'fecha_resolucion' => $fechaResolucion,
           'iva' => $IVA,
           'monto_total' => $MontoTotal,
+          'detalle' => $detalle,
         ];
 
         //find registro_compra_venta with the given data

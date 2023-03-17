@@ -20,12 +20,20 @@ return new class extends Migration {
         ->comment('Razón social del emisor del DTE');
       $table->string('rut_receptor')->comment('RUT del receptor del DTE');
       $table->date('fecha_emision')->comment('Fecha de emisión del DTE');
+      $table
+        ->datetime('fecha_recepcion')
+        ->comment('Fecha de recepción del DTE');
       $table->double('monto_neto')->comment('Monto neto del DTE');
+      $table->double('iva')->comment('IVA del DTE');
+      $table->double('monto_exento')->comment('Monto exento del DTE');
+      $table->double('monto_total')->comment('Monto total del DTE');
+      $table
+        ->mediumText('detalle')
+        ->nullable()
+        ->comment('Detalle del DTE en JSON');
       $table->integer('tipo_dte')->comment('Tipo de DTE');
       $table->integer('folio')->comment('Folio del DTE');
       $table->date('fecha_resolucion')->comment('Fecha de resolución del SII');
-      $table->double('iva')->comment('IVA del DTE');
-      $table->double('monto_total')->comment('Monto total del DTE');
       $table
         ->mediumText('xml')
         ->nullable()
