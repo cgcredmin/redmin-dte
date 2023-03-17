@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
 
 use App\Models\Compras;
+use App\Models\Contribuyentes;
 
 use Webklex\IMAP\Facades\Client;
 
@@ -134,12 +135,57 @@ class ExtraerXML extends ComandoBase
         $tipoDTE = (int) $doc->IdDoc->TipoDTE;
         $folio = (int) $doc->IdDoc->Folio;
         $fechaResolucion = (string) $caratula->FchResol;
+        $nroResolucion = (int) $caratula->NroResol;
         $IVA = (int) $doc->Totales->IVA;
         $MontoTotal = (int) $doc->Totales->MntTotal;
 
-        //find registro_compra_venta with the given data
-        $compra = Compras::where([
+        $direccionEmisor = [
+          'direccion' => (string) $doc->Emisor->DirOrigen,
+          'comuna' => (string) $doc->Emisor->CmnaOrigen,
+          'ciudad' => (string) $doc->Emisor->CiudadOrigen,
+        ];
+        [$rutSinDv, $dv] = explode('-', $rutEmisor);
+
+        //update contribuyente
+        $contribuyente = Contribuyentes::where('rut', $rutSinDv)->first();
+        if (!$contribuyente) {
+          $contribuyente = Contribuyentes::create([
+            'rut' => $rutSinDv,
+            'dv' => $dv,
+            'correo' => (string) $doc->Emisor->CorreoEmisor ?? '',
+            'direccion_regional' => json_encode($direccionEmisor),
+            'razon_social' => (string) $doc->Emisor->RznSoc ?? '',
+            'nro_resolucion' => $nroResolucion,
+            'fecha_resolucion' => $fechaResolucion,
+          ]);
+        } else {
+          if ($contribuyente->correo == '' || $contribuyente->correo == null) {
+            $contribuyente->correo = (string) $doc->Emisor->CorreoEmisor ?? '';
+          }
+          if (
+            $contribuyente->direccion_regional == '' ||
+            $contribuyente->direccion_regional == null
+          ) {
+            $contribuyente->direccion_regional = json_encode($direccionEmisor);
+          }
+          if (
+            $contribuyente->razon_social == null ||
+            $contribuyente->razon_social == ''
+          ) {
+            $contribuyente->razon_social = (string) $doc->Emisor->RznSoc ?? '';
+          }
+          if (
+            $contribuyente->nro_resolucion == '' ||
+            $contribuyente->nro_resolucion == null
+          ) {
+            $contribuyente->nro_resolucion = $nroResolucion;
+          }
+          $contribuyente->save();
+        }
+
+        $data = [
           'rut_emisor' => $rutEmisor,
+          'razon_social_emisor' => (string) $doc->Emisor->RznSoc ?? '',
           'rut_receptor' => $rutReceptor,
           'fecha_emision' => $fechaEmision,
           'monto_neto' => $montoNeto,
@@ -148,60 +194,37 @@ class ExtraerXML extends ComandoBase
           'fecha_resolucion' => $fechaResolucion,
           'iva' => $IVA,
           'monto_total' => $MontoTotal,
-        ])->first();
+        ];
+
+        //find registro_compra_venta with the given data
+        $compra = Compras::where($data)->first();
 
         // dd($compra);
         if (!$compra) {
-          $compra = Compras::create([
-            'rut_emisor' => $rutEmisor,
-            'rut_receptor' => $rutReceptor,
-            'fecha_emision' => $fechaEmision,
-            'monto_neto' => $montoNeto,
-            'tipo_dte' => $tipoDTE,
-            'folio' => $folio,
-            'fecha_resolucion' => $fechaResolucion,
-            'iva' => $IVA,
-            'monto_total' => $MontoTotal,
-          ]);
-
-          // dd($compra);
+          $compra = Compras::create($data);
         }
 
-        $make_pdf = false;
-        if ($compra->xml == '' || $compra->xml == null) {
-          $compra->xml = $filename;
-          $compra->save();
-
-          if ($compra->comprobacion_sii) {
-            if (
-              $compra->comprobacion_sii->pdf == '' ||
-              $compra->comprobacion_sii->pdf == null
-            ) {
-              $make_pdf = true;
-            }
-          } else {
-            $make_pdf = true;
-          }
-        }
+        // $make_pdf = $compra->pdf == '' || $compra->pdf == null;
+        $make_pdf = true;
 
         if ($make_pdf) {
           //make pdf from xml
-          $xml_hash = Crypt::encryptString($filename);
-          $pdf_hash = $this->generar_pdf($attachment->content);
-          if ($pdf_hash !== null) {
-            $pdf_hash = Crypt::encryptString($pdf_hash);
-          }
-          // dd($pdf_hash, $xml_hash);
-          if ($compra->comprobacion_sii) {
-            $compra->comprobacion_sii->xml = $xml_hash;
-            $compra->comprobacion_sii->pdf = $pdf_hash;
-            $compra->comprobacion_sii->save();
-          } else {
-            $compra->comprobacion_sii()->create([
-              'xml' => $xml_hash,
-              'pdf' => $pdf_hash,
-            ]);
-          }
+          $pdfname = $this->generar_pdf($attachment->content);
+          //hash pdf name
+          $hashed_pdfname =
+            md5($compra->id . '//' . $compra->fecha_emision) . '.pdf';
+
+          // rename pdf
+          rename($pdfname, $this->rutas->pdf . $hashed_pdfname);
+          $pdfname = $this->rutas->pdf . $hashed_pdfname;
+
+          $compra->pdf = str_replace([$this->rutas->pdf, '.pdf'], '', $pdfname);
+          $compra->xml = str_replace(
+            [$this->rutas->dte_ci, '.xml'],
+            '',
+            $filename,
+          );
+          $compra->save();
         }
 
         return true;

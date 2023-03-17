@@ -15,6 +15,9 @@ return new class extends Migration {
     Schema::create('compras', function (Blueprint $table) {
       $table->id();
       $table->string('rut_emisor')->comment('RUT del emisor del DTE');
+      $table
+        ->string('razon_social_emisor')
+        ->comment('Razón social del emisor del DTE');
       $table->string('rut_receptor')->comment('RUT del receptor del DTE');
       $table->date('fecha_emision')->comment('Fecha de emisión del DTE');
       $table->double('monto_neto')->comment('Monto neto del DTE');
@@ -24,9 +27,13 @@ return new class extends Migration {
       $table->double('iva')->comment('IVA del DTE');
       $table->double('monto_total')->comment('Monto total del DTE');
       $table
-        ->string('xml')
+        ->mediumText('xml')
         ->nullable()
         ->comment('Ruta del XML');
+      $table
+        ->mediumText('pdf')
+        ->nullable()
+        ->comment('Ruta del pdf');
       $table
         ->unsignedInteger('comprobacion_sii_id')
         ->nullable()

@@ -26,7 +26,10 @@ $router->group(['prefix' => 'api'], function () use ($router) {
       $router->post('getVentas', 'LibroCompraVentaController@getVentas');
     });
 
-    $router->post('compras', 'LibroCompraVentaController@getCompras');
+    $router->group(['prefix' => 'compras'], function () use ($router) {
+      $router->post('/', 'ComprasController@getCompras');
+      $router->get('/pdf/{hash}', 'ComprasController@getPdf');
+    });
 
     $router->group(['prefix' => 'config'], function () use ($router) {
       $router->post('uploadCertOrFolio', 'ConfigController@upload');

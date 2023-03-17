@@ -10,6 +10,7 @@ class Compras extends Model
 
   protected $fillable = [
     'rut_emisor',
+    'razon_social_emisor',
     'rut_receptor',
     'fecha_emision',
     'monto_neto',
@@ -19,6 +20,7 @@ class Compras extends Model
     'iva',
     'monto_total',
     'xml',
+    'pdf',
     'comprobacion_sii_id',
   ];
 

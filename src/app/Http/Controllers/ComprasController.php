@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Compras;
 use Carbon\Carbon;
 use sasco\LibreDTE\Sii\Dte\Base\DteImpreso;
+use App\Models\Tempfiles;
 
 class ComprasController extends Controller
 {
@@ -46,7 +47,39 @@ class ComprasController extends Controller
 
     $compras = $compras->orderBy('fecha_emision')->get();
 
+    $key = $this->getKey();
+
+    if (count($compras) > 0) {
+      $compras->map(function ($c) use ($key) {
+        $c->pdf = "file/$c->pdf?key=$key&ext=pdf";
+        $c->xml = "file/$c->xml?key=$key&ext=xml";
+      });
+    }
+
     return response()->json($compras);
+  }
+
+  private function getKey()
+  {
+    $linkVentas = TempFiles::where('nombre', 'LINK_VENTAS')
+      ->where('expires_at', '>', Carbon::now()->addHours(2))
+      ->where('ext', 'pdf;xml')
+      ->first();
+
+    if (!$linkVentas) {
+      $key = str_random(64);
+      $linkVentas = Tempfiles::create([
+        'nombre' => 'LINK_VENTAS',
+        'hash' => $key,
+        'ext' => 'pdf;xml',
+        'ruta' => $this->rutas->pdf . ';' . $this->rutas->dte_ci,
+        'expires_at' => Carbon::now()->addDays(1),
+      ]);
+    } else {
+      $key = $linkVentas->hash;
+    }
+
+    return $key;
   }
 
   private function tableFilters($request, &$table)
@@ -106,5 +139,22 @@ class ComprasController extends Controller
     if ($hasFilters === false) {
       $table = $table->take(20);
     }
+  }
+
+  public function getPdf($hash)
+  {
+    $compra = Compras::where('pdf', $hash)->first();
+    $filePath = $this->rutas->pdf . $compra->pdf . '.pdf';
+
+    if (!file_exists($filePath)) {
+      return response()->json(['error' => 'No se encontró el archivo'], 404);
+    }
+
+    $pdf = file_get_contents($filePath);
+
+    return response($pdf, 200, [
+      'Content-Type' => 'application/pdf',
+      'Content-Disposition' => 'inline; filename="dte.pdf"',
+    ]);
   }
 }
