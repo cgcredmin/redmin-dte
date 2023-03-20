@@ -287,6 +287,10 @@ class DteController extends Controller
       'Encabezado' => $request->input('Encabezado'),
       'Detalle' => $request->input('Detalle'),
     ];
+    if ($request->input('Referencia')) {
+      $factura['Referencia'] = $request->input('Referencia');
+    }
+
     $caratula = $request->input('Caratula');
 
     $DTE = new Dte($factura);
@@ -299,6 +303,7 @@ class DteController extends Controller
     $EnvioDTE->setFirma($this->firma);
     $EnvioDTE->setCaratula($caratula);
     $EnvioDTE->generar();
+
     if ($EnvioDTE->schemaValidate()) {
       $xml = $EnvioDTE->generar();
       $track_id = $EnvioDTE->enviar();
@@ -309,7 +314,9 @@ class DteController extends Controller
       //Generar Timbre en PNG
       $code = new DNS2D();
       $timbre =
-        $ted != '' && $track_id !== false ? $code->getBarcodePNG($ted, 'PDF417') : '';
+        $ted != '' && $track_id !== false
+          ? $code->getBarcodePNG($ted, 'PDF417')
+          : '';
 
       $filename = 'xml/dte/' . $DTE->getID() . ' - TI' . $track_id . '.xml';
       Storage::put($filename, $xml);
@@ -320,12 +327,23 @@ class DteController extends Controller
       //   'trackId' => $track_id,
       //   'xml' => $stringXml,
       //   'timbre' => $timbre,
+      //   'filename' => $filename,
       // ]);
+
+      dispatch(
+        new \App\Jobs\SendDTE(
+          'cj.guajardo@gmail.com',
+          $request->input('Encabezado.IdDoc.Folio'),
+          $tipo_dte,
+          $filename,
+        ),
+      );
+
       return response()->json(
         [
           'trackId' => $track_id,
           'xml' => $stringXml,
-          'timbre' => $timbre,
+          'timbre' => "$timbre",
         ],
         200,
       );
@@ -356,6 +374,7 @@ class DteController extends Controller
         EStado::DOCUMENTO_FALTA_XML,
         Estado::DOCUMENTO_FALTA_SCHEMA,
         Estado::DOCUMENTO_ERROR_SCHEMA,
+        Estado::DOCUMENTO_ERROR_GENERAR_XML,
       ]);
       return response()->json(['error' => $error], 400);
     }
@@ -373,7 +392,10 @@ class DteController extends Controller
       // dd($fileName);
 
       if (Storage::disk('pdfs')->exists($fileName) == false) {
-        return response()->json(['error' => 'No se encontró el documento'], 400);
+        return response()->json(
+          ['error' => 'No se encontró el documento'],
+          400,
+        );
       }
 
       $file = Storage::disk('pdfs')->get($fileName);
@@ -385,7 +407,10 @@ class DteController extends Controller
           $mime = finfo_buffer($finfo, $file);
           finfo_close($finfo);
 
-          return response('data:' . $mime . ';base64,' . base64_encode($file), 200);
+          return response(
+            'data:' . $mime . ';base64,' . base64_encode($file),
+            200,
+          );
         } elseif ($request->formato == 'url') {
           $extension = pathinfo($fileName, PATHINFO_EXTENSION);
           $base64 = base64_encode($file);
@@ -412,7 +437,10 @@ class DteController extends Controller
         } elseif ($request->formato == 'download') {
           return response()->download($file, $fileName);
         } elseif ($request->formato == 'raw') {
-          return response($file, 200)->header('Content-Type', 'application/pdf');
+          return response($file, 200)->header(
+            'Content-Type',
+            'application/pdf',
+          );
         }
       } else {
         return response()->json(['error' => 'Formato no válido'], 400);

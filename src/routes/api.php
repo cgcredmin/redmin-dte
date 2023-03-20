@@ -19,6 +19,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
 
     $router->group(['prefix' => 'contribuyentes'], function () use ($router) {
       $router->post('getContribuyentes', 'ContribuyentesController@index');
+      $router->post('uploadContribuyentes', 'ContribuyentesController@upload');
     });
 
     $router->group(['prefix' => 'compraventa'], function () use ($router) {

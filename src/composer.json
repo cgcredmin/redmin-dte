@@ -14,6 +14,7 @@
   "require": {
     "php": "^8.0",
     "guzzlehttp/guzzle": "^7.5",
+    "illuminate/mail": "*",
     "laravel/lumen-framework": "^9.1",
     "league/flysystem": "^3.11",
     "league/flysystem-aws-s3-v3": "^3.12",
