@@ -5,9 +5,6 @@ use sasco\LibreDTE\FirmaElectronica;
 use sasco\LibreDTE\Sii\Autenticacion;
 
 use App\Models\Config;
-use Psy\Exception\ThrowUpException;
-
-use function PHPUnit\Framework\throwException;
 
 trait DteAuthTrait
 {

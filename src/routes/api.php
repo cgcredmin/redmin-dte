@@ -11,6 +11,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
       $router->post('checkDocumento', 'DteController@comprobarDocumento');
       $router->post('checkDocumentoAv', 'DteController@comprobarDocumentoAv');
       $router->post('sendDocumento', 'DteController@enviaDocumento');
+      $router->post('sendBoleta', 'BoletaController@enviaDocumento');
       $router->get('getTempLink', 'DteController@getTempLink');
 
       $router->post('requestFolios', 'FoliosController@getFolios');
