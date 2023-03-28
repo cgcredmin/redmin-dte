@@ -290,8 +290,24 @@ class DteController extends Controller
     if ($request->input('Referencia')) {
       $factura['Referencia'] = $request->input('Referencia');
     }
-
     $caratula = $request->input('Caratula');
+
+    // cuando está en ambiente de certificación se inyecta datos de receptor
+    if ($this->ambiente == 'certificacion') {
+      // cambiar NroResol en encabezado
+      $factura['Encabezado']['IdDoc']['NroResol'] = 0;
+
+      $factura['Encabezado']['Receptor'] = [
+        'RUTRecep' => '60803000-K',
+        'RznSocRecep' => 'Servicio de Impuestos Internos',
+        'GiroRecep' => 'Gobierno',
+        'DirRecep' => 'Alonso Ovalle 680',
+        'CmnaRecep' => 'Santiago',
+      ];
+
+      //cambiar rutCeptor en caratula
+      $caratula['RutReceptor'] = '60803000-K';
+    }
 
     $DTE = new Dte($factura);
     $DTE->timbrar($Folios);

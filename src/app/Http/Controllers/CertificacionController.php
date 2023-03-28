@@ -25,15 +25,15 @@ class CertificacionController extends Controller
       'GiroEmis' => $this->giro,
       'Acteco' => $this->actividad_economica,
       'DirOrigen' => $this->direccion,
-      'CmnaOrigen' => $this->comuna,
+      'CmnaOrigen' => trim($this->comuna),
     ];
 
     // datos del receptor
     $this->Receptor = [
-      'RUTRecep' => '55666777-8',
-      'RznSocRecep' => 'Empresa S.A.',
-      'GiroRecep' => 'Servicios jur\u00eddicos',
-      'DirRecep' => 'Santiago',
+      'RUTRecep' => '60803000-K',
+      'RznSocRecep' => 'Servicio de Impuestos Internos',
+      'GiroRecep' => 'Gobierno',
+      'DirRecep' => 'Alonso Ovalle 680',
       'CmnaRecep' => 'Santiago',
     ];
   }
@@ -58,7 +58,7 @@ class CertificacionController extends Controller
 
     $set = $request->file('set');
 
-    $folios = json_decode($request->folios, true);
+    $folios = json_decode($request->folios, true, 512, JSON_THROW_ON_ERROR);
 
     $set_pruebas = [];
 
@@ -67,7 +67,8 @@ class CertificacionController extends Controller
     // caratula para el envío de los dte
     $caratula = [
       'RutEnvia' => $this->rutEmpresa,
-      'RutReceptor' => '60803000-K',
+      // 'RutReceptor' => '60803000-K',
+      'RutReceptor' => $this->Receptor['RUTRecep'],
       'FchResol' => $request->fch_resol,
       'NroResol' => 0,
     ];
@@ -199,15 +200,48 @@ class CertificacionController extends Controller
             $line = explode("\t", $line);
             // dd($line);
             $exento = stripos($line[0], 'EXENTO') !== false;
-            $set_pruebas[$caso]['Detalle'][] = [
+            $detalle = [
               'IndExe' => $exento,
-              'NmbItem' => trim($line[0]),
+              'NmbItem' => mb_convert_encoding(
+                trim($line[0]),
+                'ISO-8859-1',
+                'UTF-8',
+              ),
               'QtyItem' => isset($line[1]) ? floatval(trim($line[1])) : null,
               'PrcItem' => isset($line[2]) ? floatval(trim($line[2])) : null,
               'DescuentoPct' => isset($line[3])
                 ? floatval(trim($line[3]))
                 : null,
             ];
+
+            if (substr_count($detalle['NmbItem'], '-') > 3) {
+              $detalle = null;
+            }
+
+            if ($detalle) {
+              $items_to_delete = [
+                'IndExe',
+                'QtyItem',
+                'PrcItem',
+                'DescuentoPct',
+              ];
+              foreach ($items_to_delete as $item_to_delete) {
+                if (
+                  $detalle[$item_to_delete] == null ||
+                  $detalle[$item_to_delete] == 0
+                ) {
+                  unset($detalle[$item_to_delete]);
+                }
+              }
+
+              if (!isset($detalle['QtyItem']) && !isset($detalle['PrcItem'])) {
+                $detalle = null;
+              }
+            }
+
+            if ($detalle) {
+              $set_pruebas[$caso]['Detalle'][] = $detalle;
+            }
           }
         }
       }
@@ -225,14 +259,20 @@ class CertificacionController extends Controller
 
     // generar cada DTE, timbrar, firmar y agregar al sobre de EnvioDTE
     foreach ($set_pruebas as $documento) {
-      $DTE = new \sasco\LibreDTE\Sii\Dte($documento);
-      if (!$DTE->timbrar($Folios[$DTE->getTipo()])) {
-        break;
+      // dd($documento);
+      try {
+        $DTE = new \sasco\LibreDTE\Sii\Dte($documento);
+        // dd($DTE);
+        if (!$DTE->timbrar($Folios[$DTE->getTipo()])) {
+          break;
+        }
+        if (!$DTE->firmar($Firma)) {
+          break;
+        }
+        $EnvioDTE->agregar($DTE);
+      } catch (\Exception $e) {
+        dd([$e->getMessage(), $documento]);
       }
-      if (!$DTE->firmar($Firma)) {
-        break;
-      }
-      $EnvioDTE->agregar($DTE);
     }
 
     // enviar dtes y mostrar resultado del envío: track id o bien =false si hubo error

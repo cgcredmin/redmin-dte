@@ -14,6 +14,10 @@ trait DteAuthTrait
   protected $nombreCert = '';
   protected $rutEmpresa = '';
   protected $nombreEmpresa = '';
+  protected $giro = '';
+  protected $direccion = '';
+  protected $comuna = '';
+  protected $actividad_economica = '';
   protected $servidor = 'maullin';
   protected $ambiente = 'certificacion';
   protected $rutas = [];
