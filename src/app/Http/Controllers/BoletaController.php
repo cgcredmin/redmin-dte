@@ -48,9 +48,9 @@ class BoletaController extends Controller
       'Detalle.*.QtyItem' => 'required',
       'Detalle.*.PrcItem' => 'required',
 
-      'Caratula.RutReceptor' => 'required',
-      'Caratula.FchResol' => 'required',
-      'Caratula.NroResol' => 'required',
+      // 'Caratula.RutReceptor' => 'required',
+      // 'Caratula.FchResol' => 'required',
+      // 'Caratula.NroResol' => 'required',
     ];
 
     $this->validate($request, $rules);
@@ -71,17 +71,32 @@ class BoletaController extends Controller
     $Folios = new Sii\Folios($xmlFolios);
 
     // generar XML del DTE timbrado y firmado
-    $factura = [
+    $boleta = [
       'Encabezado' => $request->input('Encabezado'),
       'Detalle' => $request->input('Detalle'),
     ];
     if ($request->input('Referencia')) {
-      $factura['Referencia'] = $request->input('Referencia');
+      $boleta['Referencia'] = $request->input('Referencia');
     }
 
     $caratula = $request->input('Caratula');
 
-    $DTE = new Dte($factura);
+    if ($this->ambiente === 'certificacion') {
+      $boleta['Encabezado']['Receptor'] = [
+        'RUTRecep' => '60803000-K',
+        'RznSocRecep' => 'Servicio de Impuestos Internos',
+        'GiroRecep' => 'Gobierno',
+        'DirRecep' => 'Alonso Ovalle 680',
+        'CmnaRecep' => 'Santiago',
+      ];
+
+      //cambiar rutCeptor en caratula
+      $caratula['RutReceptor'] = '60803000-K';
+      // cambiar NroResol en encabezado
+      $caratula['NroResol'] = 0;
+    }
+
+    $DTE = new Dte($boleta);
     $DTE->timbrar($Folios);
     $DTE->firmar($this->firma);
 

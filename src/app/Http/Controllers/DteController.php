@@ -8,7 +8,7 @@ use sasco\LibreDTE\Sii;
 use sasco\LibreDTE\Sii\Dte;
 use sasco\LibreDTE\Estado;
 
-use Storage;
+use Illuminate\Support\Facades\Storage;
 
 use App\Models\RegistroCompraVenta;
 use App\Models\ComprobacionSii;
@@ -311,7 +311,7 @@ class DteController extends Controller
       //cambiar rutCeptor en caratula
       $caratula['RutReceptor'] = '60803000-K';
       // cambiar NroResol en encabezado
-      $factura['NroResol'] = 0;
+      $caratula['NroResol'] = 0;
     }
 
     $DTE = new Dte($factura);
