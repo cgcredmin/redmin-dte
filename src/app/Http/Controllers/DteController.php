@@ -300,9 +300,6 @@ class DteController extends Controller
 
     // cuando está en ambiente de certificación se inyecta datos de receptor
     if ($this->ambiente === 'certificacion') {
-      // cambiar NroResol en encabezado
-      $factura['Encabezado']['IdDoc']['NroResol'] = 0;
-
       $factura['Encabezado']['Receptor'] = [
         'RUTRecep' => '60803000-K',
         'RznSocRecep' => 'Servicio de Impuestos Internos',
@@ -313,6 +310,8 @@ class DteController extends Controller
 
       //cambiar rutCeptor en caratula
       $caratula['RutReceptor'] = '60803000-K';
+      // cambiar NroResol en encabezado
+      $factura['NroResol'] = 0;
     }
 
     $DTE = new Dte($factura);
