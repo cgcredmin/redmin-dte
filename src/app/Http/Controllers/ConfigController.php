@@ -166,7 +166,7 @@ class ConfigController extends Controller
       'DTE_NOMBRE_EMPRESA' => 'string|min:6',
       'DTE_GIRO' => 'string|min:6',
       'DTE_DIRECCION' => 'string|min:6',
-      'DTE_COMUNA' => 'string|min:6',
+      'DTE_COMUNA' => 'string|min:3',
       'DTE_ACT_ECONOMICA' => 'numeric|min:4',
       'DTE_FECHA_RESOL' => 'date:format("Y-m-d")',
       'DTE_NUM_RESOL' => 'numeric|min:0',
@@ -232,7 +232,7 @@ class ConfigController extends Controller
         'DTE_FECHA_RESOL' => $request->input('DTE_FECHA_RESOL'),
       ]);
     }
-    if ($request->input('DTE_NUM_RESOL')) {
+    if ($request->has('DTE_NUM_RESOL')) {
       $config->update([
         'DTE_NUM_RESOL' => $request->input('DTE_NUM_RESOL'),
       ]);

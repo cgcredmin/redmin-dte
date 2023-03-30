@@ -255,14 +255,14 @@ class DteController extends Controller
       'Encabezado.Receptor.DirRecep' => 'required',
       'Encabezado.Receptor.CmnaRecep' => 'required',
 
-      'Detalle' => 'required',
+      'Detalle' => 'required_if:Encabezado.IdDoc.TipoDTE,33',
       'Detalle.*.NmbItem' => 'required',
       'Detalle.*.QtyItem' => 'required',
       'Detalle.*.PrcItem' => 'required',
 
-      'Caratula.RutReceptor' => 'required',
-      'Caratula.FchResol' => 'required',
-      'Caratula.NroResol' => 'required',
+      // 'Caratula.RutReceptor' => 'required',
+      // 'Caratula.FchResol' => 'required',
+      // 'Caratula.NroResol' => 'required',
     ];
 
     $this->validate($request, $rules);
@@ -290,10 +290,16 @@ class DteController extends Controller
     if ($request->input('Referencia')) {
       $factura['Referencia'] = $request->input('Referencia');
     }
-    $caratula = $request->input('Caratula');
+    // $caratula = $request->input('Caratula');
+    $caratula = [
+      'RutEnvia' => $this->rutSiiUser,
+      'RutReceptor' => $request->input('Encabezado.Receptor.RUTRecep'),
+      'FchResol' => $this->FchResol,
+      'NroResol' => $this->NroResol,
+    ];
 
     // cuando está en ambiente de certificación se inyecta datos de receptor
-    if ($this->ambiente == 'certificacion') {
+    if ($this->ambiente === 'certificacion') {
       // cambiar NroResol en encabezado
       $factura['Encabezado']['IdDoc']['NroResol'] = 0;
 
