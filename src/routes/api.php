@@ -54,6 +54,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
         'sendLibroCompras',
         'CertificacionController@sendLibroCompras',
       );
+      $router->post('sendLibroGuias', 'CertificacionController@sendLibroGuias');
     });
 
     $router->post('test', 'TestController@test');

@@ -37,9 +37,22 @@ class ComprasController extends Controller
     ];
   }
 
+  private function getMessages()
+  {
+    return [
+      'rut.exists' => 'El rut no existe en la base de datos',
+      'folio.exists' => 'El folio no existe en la base de datos',
+      'tipo.in' => 'El tipo de documento no es válido',
+      'estado.in' => 'El estado no es válido',
+      'desde.date' => 'El campo desde debe ser una fecha válida',
+      'hasta.date' => 'El campo hasta debe ser una fecha válida',
+      'periodo.date_format' => 'El campo periodo debe ser una fecha válida',
+    ];
+  }
+
   public function getCompras(Request $request)
   {
-    $this->validate($request, $this->getRules());
+    $this->validate($request, $this->getRules(), $this->getMessages());
 
     $compras = Compras::where('id', '>', 0);
 

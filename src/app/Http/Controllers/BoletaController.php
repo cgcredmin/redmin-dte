@@ -79,7 +79,13 @@ class BoletaController extends Controller
       $boleta['Referencia'] = $request->input('Referencia');
     }
 
-    $caratula = $request->input('Caratula');
+    // $caratula = $request->input('Caratula');
+    $caratula = [
+      'RutEnvia' => $this->rutCert,
+      'RutReceptor' => $request->input('Encabezado.Receptor.RUTRecep'),
+      'FchResol' => $this->FchResol,
+      'NroResol' => $this->NroResol,
+    ];
 
     if ($this->ambiente === 'certificacion') {
       $boleta['Encabezado']['Receptor'] = [

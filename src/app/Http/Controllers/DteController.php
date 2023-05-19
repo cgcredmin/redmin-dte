@@ -292,7 +292,7 @@ class DteController extends Controller
     }
     // $caratula = $request->input('Caratula');
     $caratula = [
-      'RutEnvia' => $this->rutSiiUser,
+      'RutEnvia' => $this->rutCert,
       'RutReceptor' => $request->input('Encabezado.Receptor.RUTRecep'),
       'FchResol' => $this->FchResol,
       'NroResol' => $this->NroResol,

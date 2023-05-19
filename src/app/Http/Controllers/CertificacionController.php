@@ -110,7 +110,7 @@ class CertificacionController extends Controller
     $rules = [
       'set' => 'required|file|mimes:txt',
       'folios.*' => 'required|numeric|min:1',
-      'nombre' => 'required|string|in:BASICO,GUIA_DESPACHO',
+      'nombre' => 'required|string|in:BASICO,GUIA_DESPACHO,COMPRAS',
     ];
     $this->validate($request, $rules);
 
@@ -136,6 +136,7 @@ class CertificacionController extends Controller
     );
     // $lines = file($set->getRealPath());
     // $set_pruebas = $this->parseTXT($lines);
+    $set_pruebas = $this->changeItemEncoding($set_pruebas);
     // dd($set_pruebas);
 
     // Objetos de Firma, Folios y EnvioDTE
@@ -164,14 +165,6 @@ class CertificacionController extends Controller
         'MntTotal' => 0,
       ];
 
-      //cambia codificación de caracteres de items
-      // foreach ($documento['Detalle'] as $det) {
-      //   $det['NmbItem'] = mb_convert_encoding(
-      //     trim($det['NmbItem']),
-      //     'ISO-8859-1',
-      //     'UTF-8',
-      //   );
-      // }
       try {
         $DTE = new \sasco\LibreDTE\Sii\Dte($documento);
         // dd($DTE);
@@ -211,12 +204,7 @@ class CertificacionController extends Controller
     $track_id = $EnvioDTE->enviar();
 
     // si hubo errores mostrar
-    $errors = [];
-    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
-      $errors[] = collect($error)
-        ->only(['code', 'msg'])
-        ->toArray();
-    }
+    $errors = $this->getErrors($track_id);
 
     foreach ($folios as $key => $folio) {
       $doc_count = collect($set_pruebas)
@@ -238,7 +226,7 @@ class CertificacionController extends Controller
       count($errors) > 0 ? 400 : 200,
     );
   }
-  public function sendLibroVentas(Request $request)
+  public function sendLibroGuias(Request $request)
   {
     $folios = json_decode(
       file_get_contents($this->rutas->certificacion . 'folios.json'),
@@ -269,25 +257,138 @@ class CertificacionController extends Controller
     // caratula del libro
     $caratula = [
       'RutEmisorLibro' => $this->rutEmpresa,
-      'RutEnvia' => $this->rutSiiUser,
-      'PeriodoTributario' => '2023-03',
-      'FchResol' => $folios['fch_resol'],
-      'NroResol' => $this->NroResol,
-      'TipoOperacion' => 'VENTA',
-      'TipoLibro' => 'ESPECIAL',
-      'TipoEnvio' => 'TOTAL',
-      // 'FolioNotificacion' => $this->NroResol,
+      'FchResol' => $this->FchResol,
+      'NroResol' => 0,
+      'FolioNotificacion' => 1,
     ];
 
     $set_pruebas = json_decode(
-      file_get_contents($this->rutas->certificacion . 'SetPruebas.json'),
+      file_get_contents(
+        $this->rutas->certificacion . 'SetPruebas-GUIA_DESPACHO.json',
+      ),
+      true,
+    );
+    // dd($set_pruebas[0]);
+
+    $param = false;
+    // Objetos de Firma y LibroGuia
+    $Firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
+    $LibroGuias = new \sasco\LibreDTE\Sii\LibroGuia();
+
+    $Folios = [];
+    // generar cada DTE y agregar su resumen al detalle del libro
+    foreach ($set_pruebas as $k => $documento) {
+      // dont load if tipoDTE is not tiposDTEPermitidos
+      $tipoDoc = $documento['Encabezado']['IdDoc']['TipoDTE'];
+      if (!in_array($tipoDoc, $this->tiposDTEPermitidos)) {
+        continue;
+      }
+
+      // dd($documento->Encabezado->IdDoc->TipoDTE);
+      if (!isset($Folios[$tipoDoc])) {
+        $Folios[$tipoDoc] = new \sasco\LibreDTE\Sii\Folios(
+          file_get_contents($this->rutas->folios . $tipoDoc . '.xml'),
+        );
+      }
+
+      try {
+        $DTE = new \sasco\LibreDTE\Sii\Dte($documento);
+        $resumen = (array) $DTE->getResumen();
+        $resumen['RUTDoc'] = $this->rutEmpresa;
+        $resumen['RznSoc'] = $this->nombreEmpresa;
+
+        if ($k == 1) {
+          $resumen['FchDocRef'] = date('Y-m-d');
+        } else {
+          $resumen['Anulado'] = 2;
+        }
+        // dd($resumen);
+        $LibroGuias->agregar($resumen); // agregar detalle sin normalizar
+      } catch (\Exception $e) {
+        dd($documento);
+      }
+    }
+
+    // enviar libro de ventas y mostrar resultado del envío: track id o bien =false si hubo error
+    $LibroGuias->setFirma($Firma);
+    $LibroGuias->setCaratula($caratula);
+    $LibroGuias->generar($param); // generar XML sin firma y sin detalle
+    if ($LibroGuias->schemaValidate()) {
+      $xml = $LibroGuias->saveXML();
+      // save xml file to certificacion folder
+      file_put_contents($this->rutas->certificacion . 'LibroGuias.xml', $xml);
+      // dd($xml);
+      $track_id = $LibroGuias->enviar(); // enviar XML generado en línea anterior
+    } else {
+      dd($LibroGuias->schemaValidate(), \sasco\LibreDTE\Log::readAll());
+    }
+
+    // si hubo errores mostrar
+    $errors = $this->getErrors($track_id);
+
+    $folios['fch_resol'] = $caratula['FchResol'];
+    $folios['exito_ventas'] = $track_id ? true : false;
+    $this->updateFoliosConfig($folios);
+
+    return response()->json([
+      'errors' => $errors,
+      'track_id' => $track_id,
+      'folios' => $folios,
+    ]);
+  }
+  public function sendLibroVentas(Request $request)
+  {
+    $folios = json_decode(
+      file_get_contents($this->rutas->certificacion . 'folios.json'),
+      true,
+    );
+
+    if (!isset($folios['exito_set_pruebas'])) {
+      return response()->json(
+        [
+          'error' => [
+            'No se puede enviar la simulación si no se ha enviado el set de pruebas',
+          ],
+        ],
+        400,
+      );
+    }
+    if ($folios['exito_set_pruebas'] == false) {
+      return response()->json(
+        [
+          'error' => [
+            'No se puede enviar la simulación si el envío del set de pruebas falló',
+          ],
+        ],
+        400,
+      );
+    }
+
+    $periodo = '2023-03';
+    $poriginal = '2023-03';
+
+    // caratula del libro
+    $caratula = [
+      'RutEnvia' => $this->rutCert,
+      'FchResol' => $this->FchResol,
+      'NroResol' => 102006,
+      'RutEmisorLibro' => $this->rutEmpresa,
+      'PeriodoTributario' => $periodo,
+      'TipoOperacion' => 'VENTA',
+      'TipoLibro' => 'ESPECIAL',
+      'TipoEnvio' => 'TOTAL',
+      'FolioNotificacion' => 102006,
+    ];
+
+    $set_pruebas = json_decode(
+      file_get_contents($this->rutas->certificacion . 'SetPruebas-BASICO.json'),
       true,
     );
     // dd($set_pruebas[0]);
 
     // Objetos de Firma y LibroCompraVenta
     $Firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
-    $LibroCompraVenta = new \sasco\LibreDTE\Sii\LibroCompraVenta(true);
+    $LibroCompraVenta = new \sasco\LibreDTE\Sii\LibroCompraVenta();
 
     $Folios = [];
     // generar cada DTE y agregar su resumen al detalle del libro
@@ -307,7 +408,11 @@ class CertificacionController extends Controller
 
       try {
         $DTE = new \sasco\LibreDTE\Sii\Dte($documento);
-        $LibroCompraVenta->agregar((array) $DTE->getResumen(), false); // agregar detalle sin normalizar
+        $resumen = (array) $DTE->getResumen();
+        $resumen['RUTDoc'] = $this->rutEmpresa;
+        $resumen['RznSoc'] = $this->nombreEmpresa;
+        // dd($resumen);
+        $LibroCompraVenta->agregar($resumen, false); // agregar detalle sin normalizar
       } catch (\Exception $e) {
         dd($documento);
       }
@@ -315,17 +420,43 @@ class CertificacionController extends Controller
 
     // enviar libro de ventas y mostrar resultado del envío: track id o bien =false si hubo error
     $LibroCompraVenta->setCaratula($caratula);
-    $LibroCompraVenta->generar(); // generar XML sin firma y sin detalle
+    $LibroCompraVenta->generar(true); // generar XML sin firma y sin detalle
     $LibroCompraVenta->setFirma($Firma);
+    $xml = $LibroCompraVenta->saveXML();
+    // save xml file to certificacion folder
+    file_put_contents(
+      $this->rutas->certificacion . 'LibroCompraVenta-VENTAS.xml',
+      $xml,
+    );
+    $csv_path = $this->createCSV(
+      $this->rutas->certificacion . 'LibroCompraVenta-VENTAS.xml',
+      $poriginal,
+    );
+    // dd($csv_path);
+
+    $simplificado = false;
+    $LibroCompraVenta = new \sasco\LibreDTE\Sii\LibroCompraVenta(
+      !$simplificado,
+    ); // se genera libro simplificado (solicitado así en certificación)
+
+    // agregar detalle desde un archivo CSV con ; como separador
+    $LibroCompraVenta->agregarVentasCSV($csv_path);
+
+    // enviar libro de compras y mostrar resultado del envío: track id o bien =false si hubo error
+    $LibroCompraVenta->setCaratula($caratula);
+    $LibroCompraVenta->generar($simplificado); // generar XML sin firma y sin detalle
+    $LibroCompraVenta->setFirma($Firma);
+
     $track_id = $LibroCompraVenta->enviar(); // enviar XML generado en línea anterior
 
+    $xml = $LibroCompraVenta->saveXML();
+    file_put_contents(
+      $this->rutas->certificacion . 'LibroCompraVenta-VENTAS2.xml',
+      $xml,
+    );
+
     // si hubo errores mostrar
-    $errors = [];
-    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
-      $errors[] = collect($error)
-        ->only(['code', 'msg'])
-        ->toArray();
-    }
+    $errors = $this->getErrors($track_id);
 
     $folios['fch_resol'] = $caratula['FchResol'];
     $folios['exito_ventas'] = $track_id ? true : false;
@@ -335,6 +466,7 @@ class CertificacionController extends Controller
       'errors' => $errors,
       'track_id' => $track_id,
       'folios' => $folios,
+      'xml' => $xml,
     ]);
   }
   public function sendLibroCompras(Request $request)
@@ -365,19 +497,20 @@ class CertificacionController extends Controller
       );
     }
 
-    $NroResol = $request->has('NroResol') ? $request->NroResol : 0;
+    $periodo = '2023-01';
+    $poriginal = '2023-03';
 
     // caratula del libro
     $caratula = [
-      'RutEmisorLibro' => $this->rutEmpresa,
       'RutEnvia' => $this->rutCert,
-      'PeriodoTributario' => '2000-03',
-      'FchResol' => $folios['fch_resol'],
-      'NroResol' => $NroResol,
+      'FchResol' => $this->FchResol,
+      'RutEmisorLibro' => $this->rutEmpresa,
+      'PeriodoTributario' => $periodo,
+      'NroResol' => 102006,
       'TipoOperacion' => 'COMPRA',
       'TipoLibro' => 'ESPECIAL',
       'TipoEnvio' => 'TOTAL',
-      'FolioNotificacion' => $NroResol,
+      'FolioNotificacion' => 102006,
     ];
 
     // EN FACTURA CON IVA USO COMUN CONSIDERE QUE EL FACTOR DE PROPORCIONALIDAD
@@ -391,12 +524,15 @@ class CertificacionController extends Controller
     $detalles = [
       // FACTURA					234
       // FACTURA DEL GIRO CON DERECHO A CREDITO
-      //     52954
+      //     35798
+
       [
         'TpoDoc' => 30,
         'NroDoc' => 234,
         'TasaImp' => $TasaImp,
-        'MntNeto' => 52954,
+        'FchDoc' => $caratula['PeriodoTributario'] . '-01',
+        'RUTDoc' => $this->rutEmpresa,
+        'MntNeto' => 35798,
       ],
       // FACTURA ELECTRONICA 			 32
       // FACTURA DEL GIRO CON DERECHO A CREDITO
@@ -404,8 +540,11 @@ class CertificacionController extends Controller
       [
         'TpoDoc' => 33,
         'NroDoc' => 32,
-        'MntExe' => 10616,
-        'MntNeto' => 11427,
+        'TasaImp' => $TasaImp,
+        'FchDoc' => $caratula['PeriodoTributario'] . '-01',
+        'RUTDoc' => $this->rutEmpresa,
+        'MntExe' => 9656,
+        'MntNeto' => 8772,
       ],
       // FACTURA					781
       // FACTURA CON IVA USO COMUN
@@ -413,7 +552,10 @@ class CertificacionController extends Controller
       [
         'TpoDoc' => 30,
         'NroDoc' => 781,
-        'MntNeto' => 30167,
+        'TasaImp' => $TasaImp,
+        'FchDoc' => $caratula['PeriodoTributario'] . '-02',
+        'RUTDoc' => $this->rutEmpresa,
+        'MntNeto' => 29960,
         // Al existir factor de proporcionalidad se calculará el IVAUsoComun.
         // Se calculará como MntNeto * (TasaImp/100) y se añadirá a MntIVA.
         // Se quitará del detalle al armar los totales, ya que no es nodo del detalle en el XML.
@@ -425,7 +567,10 @@ class CertificacionController extends Controller
       [
         'TpoDoc' => 60,
         'NroDoc' => 451,
-        'MntNeto' => 2926,
+        'TasaImp' => $TasaImp,
+        'FchDoc' => $caratula['PeriodoTributario'] . '-03',
+        'RUTDoc' => $this->rutEmpresa,
+        'MntNeto' => 2814,
         'TpoDocRef' => 30,
         'FolioDocRef' => 234,
       ],
@@ -435,10 +580,13 @@ class CertificacionController extends Controller
       [
         'TpoDoc' => 33,
         'NroDoc' => 67,
-        'MntNeto' => 12115,
+        'TasaImp' => $TasaImp,
+        'FchDoc' => $caratula['PeriodoTributario'] . '-04',
+        'RUTDoc' => $this->rutEmpresa,
+        'MntNeto' => 10983,
         'IVANoRec' => [
           'CodIVANoRec' => 4,
-          'MntIVANoRec' => round(12115 * ($TasaImp / 100)) * -1,
+          'MntIVANoRec' => round(10983 * ($TasaImp / 100)),
         ],
       ],
       // FACTURA DE COMPRA ELECTRONICA		  9
@@ -447,11 +595,14 @@ class CertificacionController extends Controller
       [
         'TpoDoc' => 46,
         'NroDoc' => 9,
-        'MntNeto' => 10622,
+        'TasaImp' => $TasaImp,
+        'FchDoc' => $caratula['PeriodoTributario'] . '-05',
+        'RUTDoc' => $this->rutEmpresa,
+        'MntNeto' => 10054,
         'OtrosImp' => [
           'CodImp' => 15,
           'TasaImp' => $TasaImp,
-          'MntImp' => round(10622 * ($TasaImp / 100)) * -1,
+          'MntImp' => round(10054 * ($TasaImp / 100)),
         ],
       ],
       // NOTA DE CREDITO				211
@@ -460,21 +611,18 @@ class CertificacionController extends Controller
       [
         'TpoDoc' => 60,
         'NroDoc' => 211,
-        'MntNeto' => 9010,
+        'TasaImp' => $TasaImp,
+        'FchDoc' => $caratula['PeriodoTributario'] . '-06',
+        'RUTDoc' => $this->rutEmpresa,
+        'MntNeto' => 6547,
         'TpoDocRef' => 33,
         'FolioDocRef' => 32,
       ],
     ];
 
-    foreach ($detalles as $k => $detalle) {
-      $detalle['FchDoc'] = $caratula['PeriodoTributario'] . '-01';
-      $detalle['RUTDoc'] = '78885550-8';
-      $detalle['TasaImp'] = $TasaImp;
-    }
-
     // Objetos de Firma y LibroCompraVenta
     $Firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
-    $LibroCompraVenta = new \sasco\LibreDTE\Sii\LibroCompraVenta();
+    $LibroCompraVenta = new \sasco\LibreDTE\Sii\LibroCompraVenta(false);
 
     // agregar cada uno de los detalles al libro
     foreach ($detalles as $detalle) {
@@ -483,17 +631,41 @@ class CertificacionController extends Controller
 
     // enviar libro de compras y mostrar resultado del envío: track id o bien =false si hubo error
     $LibroCompraVenta->setCaratula($caratula);
-    $LibroCompraVenta->generar(); // generar XML sin firma
+    $xml = $LibroCompraVenta->generar(true); // generar XML sin firma
     $LibroCompraVenta->setFirma($Firma);
+
+    // save XML to file
+    file_put_contents(
+      $this->rutas->certificacion . 'LibroCompraVenta-COMPRAS.xml',
+      $xml,
+    );
+
+    $csv_path = $this->createCSVCompras(
+      $this->rutas->certificacion . 'LibroCompraVenta-COMPRAS.xml',
+      $poriginal,
+    );
+
+    $x = false;
+    $LibroCompraVenta = new \sasco\LibreDTE\Sii\LibroCompraVenta(!$x); // se genera libro simplificado (solicitado así en certificación)
+
+    // agregar detalle desde un archivo CSV con ; como separador
+    $LibroCompraVenta->agregarVentasCSV($csv_path);
+
+    // enviar libro de compras y mostrar resultado del envío: track id o bien =false si hubo error
+    $LibroCompraVenta->setCaratula($caratula);
+    $LibroCompraVenta->generar($x); // generar XML sin firma y sin detalle
+    $LibroCompraVenta->setFirma($Firma);
+
     $track_id = $LibroCompraVenta->enviar(); // enviar XML generado en línea anterior
 
+    $xml = $LibroCompraVenta->saveXML();
+    file_put_contents(
+      $this->rutas->certificacion . 'LibroCompraVenta-COMPRAS2.xml',
+      $xml,
+    );
+
     // si hubo errores mostrar
-    $errors = [];
-    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
-      $errors[] = collect($error)
-        ->only(['code', 'msg'])
-        ->toArray();
-    }
+    $errors = $this->getErrors($track_id);
 
     $folios['fch_resol'] = $caratula['FchResol'];
     $folios['exito_ventas'] = $track_id ? true : false;
@@ -802,5 +974,200 @@ class CertificacionController extends Controller
     }
 
     return $set_pruebas;
+  }
+
+  private function changeItemEncoding($set_pruebas)
+  {
+    foreach ($set_pruebas as $key => $value) {
+      foreach ($value['Detalle'] as $key2 => $value2) {
+        // try detect encoding
+        $encoding = mb_detect_encoding(
+          $set_pruebas[$key]['Detalle'][$key2]['NmbItem'],
+        );
+        // dd($encoding);
+        // change to utf-8
+        $set_pruebas[$key]['Detalle'][$key2]['NmbItem'] = mb_convert_encoding(
+          $value2['NmbItem'],
+          'UTF-8',
+          $encoding,
+        );
+      }
+    }
+    return $set_pruebas;
+  }
+
+  private function createCSV($file, $periodo)
+  {
+    //check if $periodo is null or is not YYYY-MM
+    if (!$periodo || !preg_match('/^\d{4}-\d{2}$/', $periodo)) {
+      $periodo = date('Y-m');
+    }
+
+    $xml = simplexml_load_file($file);
+    $f = stripos($file, '-VENTA');
+    $nombre = 'LibroVentas.csv';
+    if ($f === false) {
+      $nombre = 'LibroCompras.csv';
+    }
+    $csv = fopen($this->rutas->certificacion . $nombre, 'w');
+
+    $header = [
+      'TpoDoc',
+      'NroDoc',
+      'RUTDoc',
+      'TasaImp',
+      'RznSoc',
+      'FchDoc',
+      'Anulado',
+      'MntExe',
+      'MntNeto',
+      'MntIVA',
+      'IVAFueraPlazo',
+      'CodImp',
+      'TasaImp',
+      'MntImp',
+      'IVAPropio',
+      'IVATerceros',
+      'IVARetTotal',
+      'IVARetParcial',
+      'IVANoRetenido',
+      'Ley18211',
+      'CredEC',
+      'TpoDocRef',
+      'FolioDocRef',
+      'DepEnvase',
+      'MntNoFact',
+      'MntPeriodo',
+      'PsjNac',
+      'PsjInt',
+      'NumId',
+      'Nacionalidad',
+      'IndServicio',
+      'IndSinCosto',
+      'RutEmisor',
+      'ValComNeto',
+      'ValComExe',
+      'ValComIVA',
+      'CdgSIISucur',
+      'NumInt',
+      'Emisor',
+      'MntTotal',
+    ];
+
+    fputcsv($csv, $header, ';');
+
+    foreach ($xml->EnvioLibro->Detalle as $detalle) {
+      $row = [];
+      foreach ($header as $h) {
+        $row[$h] = '';
+        //check if exists
+        if (isset($detalle->$h)) {
+          if (!in_array($h, ['Emisor', 'MntIVA', 'MntTotal'])) {
+            $row[$h] = (string) $detalle->$h;
+          }
+          if ($h == 'FchDoc') {
+            // replace YYYY-MM with $periodo
+            $row[$h] = str_replace(date('Y-m'), $periodo, $row[$h]);
+          }
+        }
+      }
+      fputcsv($csv, $row, ';');
+    }
+
+    fclose($csv);
+
+    return $this->rutas->certificacion . 'LibroVentas.csv';
+  }
+  private function createCSVCompras($file, $periodo)
+  {
+    //check if $periodo is null or is not YYYY-MM
+    if (!$periodo || !preg_match('/^\d{4}-\d{2}$/', $periodo)) {
+      $periodo = date('Y-m');
+    }
+
+    $xml = simplexml_load_file($file);
+
+    $nombre = 'LibroCompras.csv';
+
+    $csv = fopen($this->rutas->certificacion . $nombre, 'w');
+
+    $header =
+      'Tipo Doc;Folio;Rut Contraparte;Tasa Impuesto;Razón Social Contraparte;Tipo Impuesto[1=IVA:2=LEY 18211];Fecha Emisión;Anulado[A];Monto Exento;Monto Neto;Monto IVA (Recuperable);Cod IVA no Rec;Monto IVA no Rec;IVA Uso Común;Cod Otro Imp (Con Crédito);Tasa Otro Imp (Con Crédito);Monto Otro Imp (Con Crédito);Monto Otro Imp (Sin Crédito);Neto Activo Fijo;IVA Activo Fijo;IVA No Retenido;Monto Imp Cigarrros Puros;Monto Imp Cigarrillos;Monto Imp Tabaco Elaborado;Monto Imp Vehículos y Autos.;Sucursal SII;Número Interno;NC o ND de FC [1];Monto Total;Factor IVA Uso Comun';
+
+    // fputcsv($csv, $header, ';');
+    fputs($csv, $header . "\n");
+
+    $rnumber = 0;
+    foreach ($xml->EnvioLibro->Detalle as $detalle) {
+      $row = [];
+      for ($k = 0; $k < 30; $k++) {
+        $row[$k] = '';
+
+        if ($k == 0) {
+          $row[$k] = $detalle->TpoDoc;
+        }
+        if ($k == 1) {
+          $row[$k] = $detalle->NroDoc;
+        }
+        if ($k == 2) {
+          $row[$k] = $detalle->RUTDoc;
+        }
+        if ($k == 3) {
+          $row[$k] = 19;
+        }
+        if ($k == 6) {
+          $row[$k] = $detalle->FchDoc;
+        }
+        if ($k == 8) {
+          $row[$k] = $detalle->MntExe;
+        }
+        if ($k == 9) {
+          $row[$k] = $detalle->MntNeto;
+        }
+        if ($k == 11) {
+          if (isset($detalle->IVANoRec)) {
+            $CodIVANoRec = $detalle->IVANoRec->CodIVANoRec;
+            $row[$k] = $CodIVANoRec;
+          }
+        }
+        if ($k == 14) {
+          if (isset($detalle->OtrosImp)) {
+            $CodImp = $detalle->OtrosImp->CodImp;
+            $row[$k] = $CodImp;
+          }
+        }
+        if ($k == 15) {
+          if (isset($detalle->OtrosImp)) {
+            $TasaImp = $detalle->OtrosImp->TasaImp;
+            $row[$k] = $TasaImp;
+          }
+        }
+        if ($k == 29 && $rnumber == 2) {
+          $row[$k] = '60';
+        }
+      }
+      fputs($csv, implode(';', $row) . "\n");
+      $rnumber++;
+    }
+
+    fclose($csv);
+
+    return $this->rutas->certificacion . 'LibroVentas.csv';
+  }
+
+  private function getErrors($track_id = null)
+  {
+    $errors = [];
+    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
+      if ($error->code == 61 && $track_id) {
+        continue;
+      }
+
+      $errors[] = collect($error)
+        ->only(['code', 'msg'])
+        ->toArray();
+    }
+
+    return $errors;
   }
 }
