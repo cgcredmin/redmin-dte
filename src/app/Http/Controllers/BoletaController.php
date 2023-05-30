@@ -20,6 +20,7 @@ use App\Http\Traits\DteEnvioBoletaTrait;
 
 use Illuminate\Http\Request;
 
+
 class BoletaController extends Controller
 {
   use DteEnvioBoletaTrait;
@@ -80,6 +81,11 @@ class BoletaController extends Controller
     }
 
     // $caratula = $request->input('Caratula');
+    if ($this->FchResol == null || $this->FchResol == '') {
+      $config = \App\Models\Config::first();
+      $this->FchResol = $config->DTE_FECHA_RESOL;
+      $this->NroResol = $config->DTE_NUM_RESOL;
+    }
     $caratula = [
       'RutEnvia' => $this->rutCert,
       'RutReceptor' => $request->input('Encabezado.Receptor.RUTRecep'),
@@ -129,8 +135,8 @@ class BoletaController extends Controller
       $code = new DNS2D();
       $timbre =
         $ted != '' && $track_id !== false
-          ? $code->getBarcodePNG($ted, 'PDF417')
-          : '';
+        ? $code->getBarcodePNG($ted, 'PDF417')
+        : '';
 
       $filename = 'xml/dte/' . $DTE->getID() . ' - TI' . $track_id . '.xml';
       Storage::put($filename, $xml);
