@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 
 use App\Models\Tempfiles;
 use Storage;
+use App\Models\Log;
 
 class BorraArchivosTemporales extends Command
 {
@@ -50,5 +51,9 @@ class BorraArchivosTemporales extends Command
         $file->delete();
       }
     }
+    Log::create([
+      'message' =>
+        'CMD_EXEC::BorraArchivosTemporales::' . count($files) . ' archivos borrados',
+    ]);
   }
 }

@@ -8,7 +8,7 @@ use sasco\LibreDTE\Sii;
 use sasco\LibreDTE\Sii\Dte;
 use sasco\LibreDTE\Estado;
 
-use Storage;
+use Illuminate\Support\Facades\Storage;
 
 use App\Models\RegistroCompraVenta;
 use App\Models\ComprobacionSii;
@@ -255,14 +255,14 @@ class DteController extends Controller
       'Encabezado.Receptor.DirRecep' => 'required',
       'Encabezado.Receptor.CmnaRecep' => 'required',
 
-      'Detalle' => 'required',
+      'Detalle' => 'required_if:Encabezado.IdDoc.TipoDTE,33',
       'Detalle.*.NmbItem' => 'required',
       'Detalle.*.QtyItem' => 'required',
       'Detalle.*.PrcItem' => 'required',
 
-      'Caratula.RutReceptor' => 'required',
-      'Caratula.FchResol' => 'required',
-      'Caratula.NroResol' => 'required',
+      // 'Caratula.RutReceptor' => 'required',
+      // 'Caratula.FchResol' => 'required',
+      // 'Caratula.NroResol' => 'required',
     ];
 
     $this->validate($request, $rules);
@@ -278,7 +278,7 @@ class DteController extends Controller
     }
 
     // Objetos de Firma y Folios
-    $xmlFolios = file_get_contents($this->rutas->folios . '33.xml');
+    $xmlFolios = file_get_contents($this->rutas->folios . "$tipo_dte.xml");
 
     $Folios = new Sii\Folios($xmlFolios);
 
@@ -287,7 +287,32 @@ class DteController extends Controller
       'Encabezado' => $request->input('Encabezado'),
       'Detalle' => $request->input('Detalle'),
     ];
-    $caratula = $request->input('Caratula');
+    if ($request->input('Referencia')) {
+      $factura['Referencia'] = $request->input('Referencia');
+    }
+    // $caratula = $request->input('Caratula');
+    $caratula = [
+      'RutEnvia' => $this->rutCert,
+      'RutReceptor' => $request->input('Encabezado.Receptor.RUTRecep'),
+      'FchResol' => $this->FchResol,
+      'NroResol' => $this->NroResol,
+    ];
+
+    // cuando está en ambiente de certificación se inyecta datos de receptor
+    if ($this->ambiente === 'certificacion') {
+      $factura['Encabezado']['Receptor'] = [
+        'RUTRecep' => '60803000-K',
+        'RznSocRecep' => 'Servicio de Impuestos Internos',
+        'GiroRecep' => 'Gobierno',
+        'DirRecep' => 'Alonso Ovalle 680',
+        'CmnaRecep' => 'Santiago',
+      ];
+
+      //cambiar rutCeptor en caratula
+      $caratula['RutReceptor'] = '60803000-K';
+      // cambiar NroResol en encabezado
+      $caratula['NroResol'] = 0;
+    }
 
     $DTE = new Dte($factura);
     $DTE->timbrar($Folios);
@@ -299,6 +324,7 @@ class DteController extends Controller
     $EnvioDTE->setFirma($this->firma);
     $EnvioDTE->setCaratula($caratula);
     $EnvioDTE->generar();
+
     if ($EnvioDTE->schemaValidate()) {
       $xml = $EnvioDTE->generar();
       $track_id = $EnvioDTE->enviar();
@@ -322,12 +348,23 @@ class DteController extends Controller
       //   'trackId' => $track_id,
       //   'xml' => $stringXml,
       //   'timbre' => $timbre,
+      //   'filename' => $filename,
       // ]);
+
+      dispatch(
+        new \App\Jobs\SendDTE(
+          'cj.guajardo@gmail.com',
+          $request->input('Encabezado.IdDoc.Folio'),
+          $tipo_dte,
+          $filename,
+        ),
+      );
+
       return response()->json(
         [
           'trackId' => $track_id,
           'xml' => $stringXml,
-          'timbre' => $timbre,
+          'timbre' => "$timbre",
         ],
         200,
       );
@@ -355,6 +392,10 @@ class DteController extends Controller
         Estado::ENVIO_ERROR_500,
         Estado::ENVIO_ERROR_XML,
         Estado::ENVIO_ERROR_GZIP,
+        EStado::DOCUMENTO_FALTA_XML,
+        Estado::DOCUMENTO_FALTA_SCHEMA,
+        Estado::DOCUMENTO_ERROR_SCHEMA,
+        Estado::DOCUMENTO_ERROR_GENERAR_XML,
       ]);
       return response()->json(['error' => $error], 400);
     }

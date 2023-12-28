@@ -57,18 +57,18 @@ return [
       'visibility' => 'public',
     ],
 
-    // 'pdfs' => [
-    //   'driver' => 's3',
-    //   'key' => env('AWS_ACCESS_KEY_ID'),
-    //   'secret' => env('AWS_SECRET_ACCESS_KEY'),
-    //   'region' => env('AWS_REGION', 'sa-east-1'),
-    //   'bucket' => env('AWS_BUCKET'),
-    //   'url' => env('AWS_URL'),
-    //   // 'driver' => 'local',
-    //   // 'root' => storage_path('app/public/s3'),
-    //   // 'url' => env('APP_URL') . '/s3',
-    //   'visibility' => 'private',
-    // ],
+    'backups' => [
+      'driver' => 's3',
+      'key' => env('AWS_ACCESS_KEY_ID'),
+      'secret' => env('AWS_SECRET_ACCESS_KEY'),
+      'region' => env('AWS_REGION', 'sa-east-1'),
+      'bucket' => env('AWS_BUCKET'),
+      'url' => env('AWS_URL'),
+      // 'driver' => 'local',
+      // 'root' => storage_path('app/public/s3'),
+      // 'url' => env('APP_URL') . '/s3',
+      'visibility' => 'private',
+    ],
 
     // 'folios' => [
     //   'driver' => 'local',

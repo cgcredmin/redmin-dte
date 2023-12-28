@@ -17,9 +17,65 @@ class CertificacionController extends Controller
   protected $Receptor;
   protected $fchResol;
 
+  // {'29', '30', '32', '33', '34', '35', '38', '39', '40', '41', '43', '45', '46', '48', '53', '55', '56', '60', '61', '101', '102', '103', '104', '105', '106', '108', '109', '110', '111', '112', '175', '180', '185', '900', '901', '902', '903', '904', '905', '906', '907', '909', '910', '911', '914', '918', '919', '920', '921', '922', '924', '500', '501'}
+  protected $tiposDTEPermitidos = [
+    '29',
+    '30',
+    '32',
+    '33',
+    '34',
+    '35',
+    '38',
+    '39',
+    '40',
+    '41',
+    '43',
+    '45',
+    '46',
+    '48',
+    '53',
+    '55',
+    '56',
+    '60',
+    '61',
+    '101',
+    '102',
+    '103',
+    '104',
+    '105',
+    '106',
+    '108',
+    '109',
+    '110',
+    '111',
+    '112',
+    '175',
+    '180',
+    '185',
+    '900',
+    '901',
+    '902',
+    '903',
+    '904',
+    '905',
+    '906',
+    '907',
+    '909',
+    '910',
+    '911',
+    '914',
+    '918',
+    '919',
+    '920',
+    '921',
+    '922',
+    '924',
+    '500',
+    '501',
+  ];
+
   public function __construct()
   {
-    parent::__construct();
 
     // datos del emisor
     $this->Emisor = [
@@ -28,14 +84,15 @@ class CertificacionController extends Controller
       'GiroEmis' => $this->giro,
       'Acteco' => $this->actividad_economica,
       'DirOrigen' => $this->direccion,
-      'CmnaOrigen' => $this->comuna,
+      'CmnaOrigen' => trim($this->comuna),
     ];
 
-    $receptor1 = [
-      'RUTRecep' => '55666777-8',
-      'RznSocRecep' => 'Empresa S.A.',
-      'GiroRecep' => 'Servicios jurídicos',
-      'DirRecep' => 'Santiago',
+    // datos del receptor
+    $this->Receptor = [
+      'RUTRecep' => '60803000-K',
+      'RznSocRecep' => 'Servicio de Impuestos Internos',
+      'GiroRecep' => 'Gobierno',
+      'DirRecep' => 'Alonso Ovalle 680',
       'CmnaRecep' => 'Santiago',
     ];
     $receptor2 = [
@@ -961,7 +1018,7 @@ class CertificacionController extends Controller
     $rules = [
       'set' => 'required|file|mimes:txt',
       'folios.*' => 'required|numeric|min:1',
-      'fch_resol' => 'required|date_format:Y-m-d',
+      'nombre' => 'required|string|in:BASICO,GUIA_DESPACHO,COMPRAS',
     ];
     $this->validate($request, $rules);
 
@@ -981,6 +1038,7 @@ class CertificacionController extends Controller
       'FchResol' => $this->fchResol,
       'NroResol' => 0,
     ];
+    // dd($caratula);
 
     $caso = '';
     $TasaImp = (float) \sasco\LibreDTE\Sii::getIVA();
@@ -1350,9 +1408,14 @@ class CertificacionController extends Controller
     $factor_proporcionalidad_iva = 60; // se divide por 100 al agregar al resumen del período
     $TasaImp = (float) \sasco\LibreDTE\Sii::getIVA();
 
-    // set de pruebas compras - número de atención 414177
+    /*     
+      SET LIBRO DE COMPRAS - NUMERO DE ATENCION: 3576504
+    */
     $detalles = [
+      // FACTURA					234
       // FACTURA DEL GIRO CON DERECHO A CREDITO
+      //     35798
+
       [
         'TpoDoc' => 30,
         'NroDoc' => 234,
@@ -1361,7 +1424,9 @@ class CertificacionController extends Controller
         'RUTDoc' => '78885550-8',
         'MntNeto' => 50812,
       ],
+      // FACTURA ELECTRONICA 			 32
       // FACTURA DEL GIRO CON DERECHO A CREDITO
+      // 10616		  11427
       [
         'TpoDoc' => 33,
         'NroDoc' => 32,
@@ -1371,7 +1436,9 @@ class CertificacionController extends Controller
         'MntExe' => 10496,
         'MntNeto' => 11096,
       ],
+      // FACTURA					781
       // FACTURA CON IVA USO COMUN
+      //     30167
       [
         'TpoDoc' => 30,
         'NroDoc' => 781,
@@ -1384,7 +1451,9 @@ class CertificacionController extends Controller
         // Se quitará del detalle al armar los totales, ya que no es nodo del detalle en el XML.
         'FctProp' => $factor_proporcionalidad_iva,
       ],
+      // NOTA DE CREDITO				451
       // NOTA DE CREDITO POR DESCUENTO A FACTURA 234
+      //     2926
       [
         'TpoDoc' => 60,
         'NroDoc' => 451,
@@ -1393,7 +1462,9 @@ class CertificacionController extends Controller
         'RUTDoc' => '78885550-8',
         'MntNeto' => 2912,
       ],
+      // FACTURA ELECTRONICA			 67
       // ENTREGA GRATUITA DEL PROVEEDOR
+      //     12115
       [
         'TpoDoc' => 33,
         'NroDoc' => 67,
@@ -1406,7 +1477,9 @@ class CertificacionController extends Controller
           'MntIVANoRec' => round(11974 * ($TasaImp / 100)),
         ],
       ],
+      // FACTURA DE COMPRA ELECTRONICA		  9
       // COMPRA CON RETENCION TOTAL DEL IVA
+      //     10622
       [
         'TpoDoc' => 46,
         'NroDoc' => 9,
@@ -1420,7 +1493,9 @@ class CertificacionController extends Controller
           'MntImp' => round(10551 * ($TasaImp / 100)),
         ],
       ],
+      // NOTA DE CREDITO				211
       // NOTA DE CREDITO POR DESCUENTO FACTURA ELECTRONICA 32
+      //     9010
       [
         'TpoDoc' => 60,
         'NroDoc' => 211,
@@ -1443,7 +1518,7 @@ class CertificacionController extends Controller
 
     // enviar libro de compras y mostrar resultado del envío: track id o bien =false si hubo error
     $LibroCompraVenta->setCaratula($caratula);
-    $LibroCompraVenta->generar(); // generar XML sin firma
+    $xml = $LibroCompraVenta->generar(true); // generar XML sin firma
     $LibroCompraVenta->setFirma($Firma);
     $xml = $LibroCompraVenta->generar();
 
@@ -1455,13 +1530,15 @@ class CertificacionController extends Controller
 
     $track_id = $LibroCompraVenta->enviar(); // enviar XML generado en línea anterior
 
+    $xml = $LibroCompraVenta->saveXML();
+    file_put_contents(
+      $this->rutas->certificacion . 'LibroCompraVenta-COMPRAS2.xml',
+      $xml,
+    );
+
     // si hubo errores mostrar
     $errors = [];
-    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
-      $errors[] = collect($error)
-        ->only(['code', 'msg'])
-        ->toArray();
-    }
+    // $errors = $this->getErrors($track_id);
 
     return response()->json([
       'errors' => $errors,

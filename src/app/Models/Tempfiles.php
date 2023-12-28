@@ -12,9 +12,4 @@ class Tempfiles extends Model
   public $timestamps = true;
 
   protected $dates = ['expires_at', 'created_at', 'updated_at'];
-
-  public function getHashAttribute($value)
-  {
-    return decrypt($value);
-  }
 }

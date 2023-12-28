@@ -276,7 +276,11 @@ pushToAWS() {
     exit 1
   fi
 
-  tag="${tag}-arm64"
+  # check if host is x86 or arm and if arm append the tag with arm
+  if [[ $HOST == "arm64" ]]; then
+    tag="$tag-arm"
+  fi
+
   log "green" "TAG: $tag"
   log "yellow" "PUSH TO AWS ${APP_NAME}:$tag"
 

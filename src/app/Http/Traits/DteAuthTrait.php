@@ -6,25 +6,25 @@ use sasco\LibreDTE\FirmaElectronica;
 use sasco\LibreDTE\Sii\Autenticacion;
 
 use App\Models\Config;
-use Psy\Exception\ThrowUpException;
-
-use function PHPUnit\Framework\throwException;
 
 trait DteAuthTrait
 {
   protected $dteconfig = [];
   protected $firma = null;
   protected $rutCert = '';
+  protected $rutSiiUser = '';
   protected $nombreCert = '';
   protected $rutEmpresa = '';
   protected $nombreEmpresa = '';
-  protected $servidor = 'maullin';
-  protected $ambiente = 'certificacion';
-  protected $rutas = [];
   protected $giro = '';
   protected $direccion = '';
   protected $comuna = '';
   protected $actividad_economica = '';
+  protected $servidor = 'maullin';
+  protected $ambiente = 'certificacion';
+  protected $rutas = [];
+  protected $FchResol = '';
+  protected $NroResol = '';
 
   public function __construct()
   {
@@ -36,6 +36,7 @@ trait DteAuthTrait
       $this->firma = new FirmaElectronica($this->dteconfig);
 
       $this->rutCert = $config->DTE_RUT_CERT;
+      $this->rutSiiUser = $config->SII_USER;
       $this->nombreCert = $config->DTE_NOMBRE_CERT;
       $this->rutEmpresa = $config->DTE_RUT_EMPRESA;
       $this->nombreEmpresa = $config->DTE_NOMBRE_EMPRESA;
@@ -45,6 +46,8 @@ trait DteAuthTrait
       $this->actividad_economica = $config->DTE_ACT_ECONOMICA;
       $this->servidor = $config->SII_SERVER;
       $this->ambiente = $config->SII_ENV;
+      $this->FchResol = $config->DTE_FECHA_RESOL;
+      $this->NroResol = $config->DTE_NUM_RESOL;
 
       $this->rutas = setDirectories();
 

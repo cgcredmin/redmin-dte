@@ -13,78 +13,86 @@ return new class extends Migration {
    */
   public function up()
   {
-    Schema::create('config', function (Blueprint $table) {
+    Schema::create("config", function (Blueprint $table) {
       $table->id()->autoIncrement();
       $table
-        ->string('SII_USER')
-        ->default('-')
-        ->comment('Usuario SII');
+        ->string("SII_USER")
+        ->default("-")
+        ->comment("Usuario SII");
       $table
-        ->string('SII_PASS')
-        ->default('-')
-        ->comment('Password SII');
+        ->string("SII_PASS")
+        ->default("-")
+        ->comment("Password SII");
       $table
-        ->string('SII_SERVER')
-        ->default('-')
-        ->comment('Servidor SII');
+        ->string("SII_SERVER")
+        ->default("-")
+        ->comment("Servidor SII");
       $table
-        ->string('SII_ENV')
-        ->default('-')
-        ->comment('Ambiente de trabajo produccion o certificacion');
+        ->string("SII_ENV")
+        ->default("-")
+        ->comment("Ambiente de trabajo produccion o certificacion");
       $table
-        ->string('CERT_PASS')
-        ->default('-')
-        ->comment('Password del certificado');
+        ->string("CERT_PASS")
+        ->default("-")
+        ->comment("Password del certificado");
       $table
-        ->string('DTE_RUT_CERT')
-        ->default('-')
-        ->comment('Rut del certificado');
+        ->string("DTE_RUT_CERT")
+        ->default("-")
+        ->comment("Rut del certificado");
       $table
-        ->string('DTE_NOMBRE_CERT')
-        ->default('-')
-        ->comment('Nombre del certificado');
+        ->string("DTE_NOMBRE_CERT")
+        ->default("-")
+        ->comment("Nombre del certificado");
       $table
-        ->string('DTE_RUT_EMPRESA')
-        ->default('-')
-        ->comment('Rut de la empresa');
+        ->string("DTE_RUT_EMPRESA")
+        ->default("-")
+        ->comment("Rut de la empresa");
       $table
-        ->string('DTE_NOMBRE_EMPRESA')
-        ->default('-')
-        ->comment('Nombre de la empresa');
+        ->string("DTE_NOMBRE_EMPRESA")
+        ->default("-")
+        ->comment("Nombre de la empresa");
       $table
-        ->string('DTE_GIRO')
-        ->default('-')
-        ->comment('Giro de la empresa');
+        ->string("DTE_GIRO")
+        ->default("-")
+        ->comment("Giro de la empresa");
       $table
-        ->string('DTE_DIRECCION')
-        ->default('-')
-        ->comment('Direccion de la empresa');
+        ->string("DTE_DIRECCION")
+        ->default("-")
+        ->comment("Direccion de la empresa");
       $table
-        ->string('DTE_COMUNA')
-        ->default('-')
-        ->comment('Comuna de la empresa');
+        ->string("DTE_COMUNA")
+        ->default("-")
+        ->comment("Comuna de la empresa");
       $table
-        ->string('DTE_ACT_ECONOMICA')
-        ->default('-')
-        ->comment('Actividad economica de la empresa');
+        ->string("DTE_ACT_ECONOMICA")
+        ->default("-")
+        ->comment("Actividad economica de la empresa");
+      $table
+        ->string("DTE_FECHA_RESOL")
+        ->default(" ")
+        ->comment("Fecha de resolución");
+      $table
+        ->string("DTE_NUM_RESOL")
+        ->default(" ")
+        ->comment("Número de resolución");
       $table->timestamps();
     });
 
     //init table with empty values
-    DB::table('config')->insert([
-      'SII_USER' => '',
-      'SII_PASS' => '',
-      'SII_SERVER' => 'maullin',
-      'SII_ENV' => 'certificacion',
-      'CERT_PASS' => '',
-      'DTE_RUT_CERT' => '',
-      'DTE_NOMBRE_CERT' => '',
-      'DTE_RUT_EMPRESA' => '',
-      'DTE_NOMBRE_EMPRESA' => '',
-      'DTE_GIRO' => '',
-      'DTE_DIRECCION' => '',
-      'DTE_COMUNA' => '',
-      'DTE_ACT_ECONOMICA' => '',
+    DB::table("config")->insert([
+      "SII_USER" => "",
+      "SII_PASS" => "",
+      "SII_SERVER" => "maullin",
+      "SII_ENV" => "certificacion",
+      "CERT_PASS" => "",
+      "DTE_RUT_CERT" => "",
+      "DTE_NOMBRE_CERT" => "",
+      "DTE_RUT_EMPRESA" => "",
+      "DTE_NOMBRE_EMPRESA" => "",
+      "DTE_GIRO" => "",
+      "DTE_DIRECCION" => "",
+      "DTE_COMUNA" => "",
+      "DTE_ACT_ECONOMICA" => "",
     ]);
   }
 
@@ -95,6 +103,6 @@ return new class extends Migration {
    */
   public function down()
   {
-    Schema::dropIfExists('config');
+    Schema::dropIfExists("config");
   }
 };
