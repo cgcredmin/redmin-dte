@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Traits;
 
 use sasco\LibreDTE\FirmaElectronica;
@@ -20,6 +21,10 @@ trait DteAuthTrait
   protected $servidor = 'maullin';
   protected $ambiente = 'certificacion';
   protected $rutas = [];
+  protected $giro = '';
+  protected $direccion = '';
+  protected $comuna = '';
+  protected $actividad_economica = '';
 
   public function __construct()
   {

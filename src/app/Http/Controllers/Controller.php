@@ -31,6 +31,7 @@ class Controller extends BaseController
 
   public function encodeObjectToUTF8($object)
   {
+    return $object;
     foreach ($object as $key => $value) {
       if (is_array($value)) {
         $object[$key] = $this->encodeObjectToUTF8($value);

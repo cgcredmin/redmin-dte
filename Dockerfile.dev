@@ -26,7 +26,7 @@ RUN apk add --no-cache npm
 RUN apk add --no-cache yarn
 RUN apk add --no-cache py3-pip
 
-RUN python -m pip install rich
+# RUN python -m pip install rich
 
 # Set the working directory to /app
 WORKDIR /var/www/html
@@ -50,8 +50,18 @@ RUN ln -sf /dev/stderr /var/log/nginx/error.log
 
 # RUN set -eux
 RUN apk update
-RUN apk add --no-cache postgresql-dev libxml2-dev php8-soap php-soap php-xml imap-dev php-imap \
-  gd libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev php-bcmath
+# RUN apk add --no-cache gd
+RUN apk add --no-cache libxml2-dev
+RUN apk add --no-cache php8-soap
+RUN apk add --no-cache php-soap
+RUN apk add --no-cache php-xml
+# RUN apk add --no-cache imap-dev
+# RUN apk add --no-cache php-imap
+RUN apk add --no-cache libpng-dev
+RUN apk add --no-cache libjpeg-turbo-dev
+RUN apk add --no-cache libwebp-dev
+RUN apk add --no-cache freetype-dev
+RUN apk add --no-cache php-bcmath
 
 # Install the PHP pdo_mysql library
 RUN docker-php-ext-install pdo pdo_mysql && docker-php-ext-enable pdo pdo_mysql
@@ -65,8 +75,15 @@ RUN docker-php-ext-install bcmath && docker-php-ext-enable bcmath
 # Install the PHP gd library
 RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg --with-webp && docker-php-ext-install gd
 
+RUN apk add --no-cache zip
+RUN apk add --no-cache unzip
+
+#Install PHP extension zip
+RUN apk add libzip-dev
+RUN docker-php-ext-install zip && docker-php-ext-enable zip
+
 # Install the PHP imap library
-RUN docker-php-ext-configure imap --with-imap --with-imap-ssl && docker-php-ext-install imap
+# RUN docker-php-ext-configure imap --with-imap --with-imap-ssl && docker-php-ext-install imap
 
 # Installing composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer

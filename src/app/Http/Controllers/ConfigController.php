@@ -84,7 +84,7 @@ class ConfigController extends Controller
         return response()->json(
           [
             'error' =>
-              'La contraseña propocionada no corresponde al certificado',
+            'La contraseña propocionada no corresponde al certificado',
           ],
           400,
         );
@@ -151,7 +151,7 @@ class ConfigController extends Controller
       'DTE_NOMBRE_EMPRESA' => 'string|min:6',
       'DTE_GIRO' => 'string|min:6',
       'DTE_DIRECCION' => 'string|min:6',
-      'DTE_COMUNA' => 'string|min:6',
+      'DTE_COMUNA' => 'string|min:3',
       'DTE_ACT_ECONOMICA' => 'numeric|min:4',
     ];
 

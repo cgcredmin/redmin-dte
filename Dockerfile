@@ -45,6 +45,13 @@ RUN docker-php-ext-enable pdo pdo_mysql
 RUN apk add --no-cache php-soap
 RUN apk add --no-cache php-xml
 
+RUN apk add --no-cache zip
+RUN apk add --no-cache unzip
+
+#Install PHP extension zip
+RUN apk add libzip-dev
+RUN docker-php-ext-install zip && docker-php-ext-enable zip
+
 # RUN set -eux
 RUN apk update
 RUN apk add libxml2-dev

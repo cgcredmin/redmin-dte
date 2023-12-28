@@ -1,0 +1,1 @@
+{"version":1,"defects":[],"times":{"Tests\\StrangeCharsTest::test_parse_replaces_strange_chars_with_correct_chars":0.017,"Tests\\StrangeCharsTest::test_parse_does_not_replace_chars_if_no_strange_chars_present":0}}
