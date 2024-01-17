@@ -17,7 +17,6 @@ class CertificacionController extends Controller
   protected $Receptor;
   protected $fchResol;
 
-  // {'29', '30', '32', '33', '34', '35', '38', '39', '40', '41', '43', '45', '46', '48', '53', '55', '56', '60', '61', '101', '102', '103', '104', '105', '106', '108', '109', '110', '111', '112', '175', '180', '185', '900', '901', '902', '903', '904', '905', '906', '907', '909', '910', '911', '914', '918', '919', '920', '921', '922', '924', '500', '501'}
   protected $tiposDTEPermitidos = [
     '29',
     '30',
@@ -140,38 +139,38 @@ class CertificacionController extends Controller
     ];
 
     /* Objetos de Firma, Folios y EnvioDTE */
-    $Firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
-    $Folios = [];
+    $firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
+    $folios = [];
     foreach ($folios as $tipo => $cantidad) {
-      $Folios[$tipo] = new \sasco\LibreDTE\Sii\Folios(
+      $folios[$tipo] = new \sasco\LibreDTE\Sii\Folios(
         file_get_contents($this->rutas->folios . $tipo . '.xml'),
       );
     }
-    $EnvioDTE = new \sasco\LibreDTE\Sii\EnvioDte();
+    $envioDte = new \sasco\LibreDTE\Sii\EnvioDte();
 
     /* generar cada DTE, timbrar, firmar y agregar al sobre de EnvioDTE */
     foreach ($set_pruebas as $documento) {
-      $DTE = new \sasco\LibreDTE\Sii\Dte($documento);
+      $dte = new \sasco\LibreDTE\Sii\Dte($documento);
 
       foreach (\sasco\LibreDTE\Log::readAll() as $error) {
         $errors[] = collect($error)
           ->only(['code', 'msg'])
           ->toArray();
       }
-      // dd($DTE, $documento, $errors);
-      if (!$DTE->timbrar($Folios[$DTE->getTipo()])) {
+      // dd($dte, $documento, $errors);
+      if (!$dte->timbrar($folios[$dte->getTipo()])) {
         break;
       }
-      if (!$DTE->firmar($Firma)) {
+      if (!$dte->firmar($firma)) {
         break;
       }
-      $EnvioDTE->agregar($DTE);
+      $envioDte->agregar($dte);
     }
 
     /* enviar dtes y mostrar resultado del envío: track id o bien =false si hubo error */
-    $EnvioDTE->setCaratula($caratula);
-    $EnvioDTE->setFirma($Firma);
-    $xml = $EnvioDTE->generar();
+    $envioDte->setCaratula($caratula);
+    $envioDte->setFirma($firma);
+    $xml = $envioDte->generar();
 
     /* Crea EnvioDTE-SetPruebas.xml */
     file_put_contents(
@@ -179,21 +178,27 @@ class CertificacionController extends Controller
       $xml,
     );
     $track_id = null;
-    $track_id = $EnvioDTE->enviar();
+    $track_id = $envioDte->enviar();
 
     return $track_id;
   }
 
+  private function errorCollector(&$errors)
+  {
+    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
+      $errors[] = collect($error)
+        ->only(['code', 'msg'])
+        ->toArray();
+    }
+  }
+
   public function sendSetBasico(Request $request)
   {
-    // $folios = json_decode($request->folios, true);
-    //"33":169,"61":154,"56":160
     $folios = [
-      33 => 236,
-      56 => 174,
-      61 => 194,
+      33 => 236, // consumo 5 => 241
+      56 => 174, // consumo 2 => 176
+      61 => 194, // consumo 1 => 195
     ];
-    // dd($folios);
 
     $caso = '3791491';
 
@@ -483,21 +488,12 @@ class CertificacionController extends Controller
       ]
     ];
 
-    // /* quitar facturas */
-    // $set_pruebas = collect($set_pruebas)
-    //   ->where('Encabezado.IdDoc.TipoDTE', '!=', 33)
-    //   ->toArray();
-
     if ($send) {
       $track_id = $this->sendDtes($folios, $set_pruebas, $errors, 'set_basico');
     }
 
     /* si hubo errores mostrar */
-    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
-      $errors[] = collect($error)
-        ->only(['code', 'msg'])
-        ->toArray();
-    }
+    $this->errorCollector($errors);
 
     foreach ($folios as $key => $folio) {
       $count  = collect($set_pruebas)
@@ -527,11 +523,9 @@ class CertificacionController extends Controller
   }
   public function sendSetGuias(Request $request)
   {
-    //"33":169,"61":154,"56":160
     $folios = [
       52 => 221,
     ];
-    // dd($folios);
 
     $caso = '3791492';
 
@@ -655,11 +649,7 @@ class CertificacionController extends Controller
 
     /* si hubo errores mostrar */
     $errors = [];
-    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
-      $errors[] = collect($error)
-        ->only(['code', 'msg'])
-        ->toArray();
-    }
+    $this->errorCollector($errors);
 
     foreach ($folios as $key => $folio) {
       $count  = collect($set_pruebas)
@@ -696,7 +686,6 @@ class CertificacionController extends Controller
       56 => 175,
       61 => 197,
     ];
-    // dd($folios);
 
     $caso = '3791496';
 
@@ -829,11 +818,7 @@ class CertificacionController extends Controller
 
     /* si hubo errores mostrar */
     $errors = [];
-    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
-      $errors[] = collect($error)
-        ->only(['code', 'msg'])
-        ->toArray();
-    }
+    $this->errorCollector($errors);
 
     foreach ($folios as $key => $folio) {
       $count  = collect($set_pruebas)
@@ -896,6 +881,8 @@ class CertificacionController extends Controller
       case 'FC':
         $path = $this->rutas->certificacion . 'SetPruebas-FacturaCompra.json';
         break;
+      default:
+        $path = null;
     }
 
     if ($path == null) {
@@ -910,7 +897,6 @@ class CertificacionController extends Controller
     }
 
     $folios = json_decode($request->folios, true);
-    // dd($folios);
 
     $set_pruebas = [];
     if ($path) {
@@ -944,54 +930,50 @@ class CertificacionController extends Controller
 
     if ($send) {
       /* Objetos de Firma, Folios y EnvioDTE */
-      $Firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
-      $Folios = [];
+      $firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
+      $folios = [];
       foreach ($folios as $tipo => $cantidad) {
-        $Folios[$tipo] = new \sasco\LibreDTE\Sii\Folios(
+        $folios[$tipo] = new \sasco\LibreDTE\Sii\Folios(
           file_get_contents($this->rutas->folios . $tipo . '.xml'),
         );
       }
-      $EnvioDTE = new \sasco\LibreDTE\Sii\EnvioDte();
+      $envioDte = new \sasco\LibreDTE\Sii\EnvioDte();
 
       /* generar cada DTE, timbrar, firmar y agregar al sobre de EnvioDTE */
       foreach ($set_pruebas as $documento) {
-        $DTE = new \sasco\LibreDTE\Sii\Dte($documento);
+        $dte = new \sasco\LibreDTE\Sii\Dte($documento);
 
         foreach (\sasco\LibreDTE\Log::readAll() as $error) {
           $errors[] = collect($error)
             ->only(['code', 'msg'])
             ->toArray();
         }
-        dd($DTE, $documento, $errors);
-        if (!$DTE->timbrar($Folios[$DTE->getTipo()])) {
+        dd($dte, $documento, $errors);
+        if (!$dte->timbrar($folios[$dte->getTipo()])) {
           break;
         }
-        if (!$DTE->firmar($Firma)) {
+        if (!$dte->firmar($firma)) {
           break;
         }
-        $EnvioDTE->agregar($DTE);
+        $envioDte->agregar($dte);
       }
 
       /* enviar dtes y mostrar resultado del envío: track id o bien =false si hubo error */
-      $EnvioDTE->setCaratula($caratula);
-      $EnvioDTE->setFirma($Firma);
-      $xml = $EnvioDTE->generar();
+      $envioDte->setCaratula($caratula);
+      $envioDte->setFirma($firma);
+      $xml = $envioDte->generar();
 
       /* Crea EnvioDTE-SetPruebas.xml */
       file_put_contents(
         $this->rutas->certificacion . 'EnvioDTE-SetPruebas.xml',
         $xml,
       );
-      $track_id = $EnvioDTE->enviar();
+      $track_id = $envioDte->enviar();
     }
 
     /* si hubo errores mostrar */
     $errors = [];
-    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
-      $errors[] = collect($error)
-        ->only(['code', 'msg'])
-        ->toArray();
-    }
+    $this->errorCollector($errors);
 
     foreach ($folios as $key => $folio) {
       $folios[$key] = $folio + 1;
@@ -1286,7 +1268,7 @@ class CertificacionController extends Controller
     ];
 
     // Objetos de Firma y LibroGuia
-    $Firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
+    $firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
     $LibroGuia = new \sasco\LibreDTE\Sii\LibroGuia();
 
     // agregar cada uno de los detalles al libro
@@ -1295,7 +1277,7 @@ class CertificacionController extends Controller
     }
 
     // enviar libro de guías y mostrar resultado del envío: track id o bien =false si hubo error
-    $LibroGuia->setFirma($Firma);
+    $LibroGuia->setFirma($firma);
     $LibroGuia->setCaratula($caratula);
     $LibroGuia->generar();
     $track_id = null;
@@ -1312,11 +1294,7 @@ class CertificacionController extends Controller
 
     /* si hubo errores mostrar */
     $errors = [];
-    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
-      $errors[] = collect($error)
-        ->only(['code', 'msg'])
-        ->toArray();
-    }
+    $this->errorCollector($errors);
 
     $folios[52] += 3;
 
@@ -1347,13 +1325,13 @@ class CertificacionController extends Controller
     // );
 
     // Objetos de Firma y LibroCompraVenta
-    $Firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
+    $firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
     $LibroCompraVenta = new \sasco\LibreDTE\Sii\LibroCompraVenta(true); // se genera libro simplificado (solicitado así en certificación)
 
     // generar cada DTE y agregar su resumen al detalle del libro
     // foreach ($set_pruebas as $documento) {
-    //   $DTE = new \sasco\LibreDTE\Sii\Dte($documento);
-    //   $LibroCompraVenta->agregar((array) $DTE->getResumen(), false); // agregar detalle sin normalizar
+    //   $dte = new \sasco\LibreDTE\Sii\Dte($documento);
+    //   $LibroCompraVenta->agregar((array) $dte->getResumen(), false); // agregar detalle sin normalizar
     // }
 
     // agregar detalle desde un archivo CSV con ; como separador
@@ -1362,7 +1340,7 @@ class CertificacionController extends Controller
     // enviar libro de compras y mostrar resultado del envío: track id o bien =false si hubo error
     $LibroCompraVenta->setCaratula($caratula);
     $LibroCompraVenta->generar(false); // generar XML sin firma y sin detalle
-    $LibroCompraVenta->setFirma($Firma);
+    $LibroCompraVenta->setFirma($firma);
     $xml = $LibroCompraVenta->generar();
 
     /* Crea EnvioDTE-SetPruebas.xml */
@@ -1375,11 +1353,7 @@ class CertificacionController extends Controller
 
     /* si hubo errores mostrar */
     $errors = [];
-    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
-      $errors[] = collect($error)
-        ->only(['code', 'msg'])
-        ->toArray();
-    }
+    $this->errorCollector($errors);
 
     return response()->json([
       'errors' => $errors,
@@ -1507,7 +1481,7 @@ class CertificacionController extends Controller
     ];
 
     // Objetos de Firma y LibroCompraVenta
-    $Firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
+    $firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
     $LibroCompraVenta = new \sasco\LibreDTE\Sii\LibroCompraVenta(true);
 
     // agregar cada uno de los detalles al libro
@@ -1519,7 +1493,7 @@ class CertificacionController extends Controller
     // enviar libro de compras y mostrar resultado del envío: track id o bien =false si hubo error
     $LibroCompraVenta->setCaratula($caratula);
     $xml = $LibroCompraVenta->generar(true); // generar XML sin firma
-    $LibroCompraVenta->setFirma($Firma);
+    $LibroCompraVenta->setFirma($firma);
     $xml = $LibroCompraVenta->generar();
 
     /* Crea EnvioDTE-SetPruebas.xml */
@@ -1538,7 +1512,7 @@ class CertificacionController extends Controller
 
     // si hubo errores mostrar
     $errors = [];
-    // $errors = $this->getErrors($track_id);
+    $this->errorCollector($errors);
 
     return response()->json([
       'errors' => $errors,
@@ -1596,48 +1570,43 @@ class CertificacionController extends Controller
         }
       }
     }
-    // return response()->json($documentos);
 
     // Objetos de Firma, Folios y EnvioDTE
-    $Firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
-    $Folios = [];
+    $firma = new \sasco\LibreDTE\FirmaElectronica($this->dteconfig);
+    $folios = [];
     foreach ($folios as $tipo => $cantidad) {
-      $Folios[$tipo] = new \sasco\LibreDTE\Sii\Folios(
+      $folios[$tipo] = new \sasco\LibreDTE\Sii\Folios(
         file_get_contents($this->rutas->folios . $tipo . '.xml'),
       );
     }
-    $EnvioDTE = new \sasco\LibreDTE\Sii\EnvioDte();
+    $envioDte = new \sasco\LibreDTE\Sii\EnvioDte();
 
     // generar cada DTE, timbrar, firmar y agregar al sobre de EnvioDTE
     foreach ($documentos as $documento) {
-      $DTE = new \sasco\LibreDTE\Sii\Dte($documento);
-      if (!$DTE->timbrar($Folios[$DTE->getTipo()])) {
+      $dte = new \sasco\LibreDTE\Sii\Dte($documento);
+      if (!$dte->timbrar($folios[$dte->getTipo()])) {
         break;
       }
-      if (!$DTE->firmar($Firma)) {
+      if (!$dte->firmar($firma)) {
         break;
       }
-      $EnvioDTE->agregar($DTE);
+      $envioDte->agregar($dte);
     }
 
     // enviar dtes y mostrar resultado del envío: track id o bien =false si hubo error
-    $EnvioDTE->setCaratula($caratula);
-    $EnvioDTE->setFirma($Firma);
-    $xml = $EnvioDTE->generar();
+    $envioDte->setCaratula($caratula);
+    $envioDte->setFirma($firma);
+    $xml = $envioDte->generar();
     // dd($xml);
     file_put_contents(
       $this->rutas->certificacion . 'EnvioDTE-Simulacion.xml',
       $xml,
     );
-    $track_id = $EnvioDTE->enviar();
+    $track_id = $envioDte->enviar();
 
     // si hubo errores mostrar
     $errors = [];
-    foreach (\sasco\LibreDTE\Log::readAll() as $error) {
-      $errors[] = collect($error)
-        ->only(['code', 'msg'])
-        ->toArray();
-    }
+    $this->errorCollector($errors);
 
     $folios['exito_simulacion'] = $track_id ? true : false;
     $this->updateFoliosConfig($folios);
@@ -1661,12 +1630,12 @@ class CertificacionController extends Controller
     set_time_limit(0);
 
     $xmls = [
-      // 'EnvioDTE-SetPruebas-LibroCompras.xml',
-      // 'EnvioDTE-SetPruebas-LibroGuias.xml',
-      // 'EnvioDTE-SetPruebas-LibroVentas.xml',
-      // 'EnvioDTE-SetPruebas-set_basico.xml',
-      // 'EnvioDTE-SetPruebas-set_compras.xml',
-      // 'EnvioDTE-SetPruebas-set_guias.xml',
+      'EnvioDTE-SetPruebas-LibroCompras.xml',
+      'EnvioDTE-SetPruebas-LibroGuias.xml',
+      'EnvioDTE-SetPruebas-LibroVentas.xml',
+      'EnvioDTE-SetPruebas-set_basico.xml',
+      'EnvioDTE-SetPruebas-set_compras.xml',
+      'EnvioDTE-SetPruebas-set_guias.xml',
       'EnvioDTE-Simulacion.xml',
     ];
 
@@ -1675,42 +1644,44 @@ class CertificacionController extends Controller
       $archivo = $this->rutas->certificacion . $xmlName;
 
       // Cargar EnvioDTE y extraer arreglo con datos de carátula y DTEs
-      $EnvioDte = new \sasco\LibreDTE\Sii\EnvioDte();
-      $EnvioDte->loadXML(file_get_contents($archivo));
-      $Caratula = $EnvioDte->getCaratula();
-      $Documentos = $EnvioDte->getDocumentos();
+      $envioDte = new \sasco\LibreDTE\Sii\EnvioDte();
+      $envioDte->loadXML(file_get_contents($archivo));
+      $caratula = $envioDte->getCaratula();
+      $documentos = $envioDte->getDocumentos();
 
       $hash = md5($xmlName);
 
       // directorio temporal para guardar los PDF
-      $dir = $this->rutas->pdf . 'dte_' . $hash . '-' . $Caratula['RutEmisor'] . '_' . $Caratula['RutReceptor'] . '_' . str_replace(['-', ':', 'T'], '', $Caratula['TmstFirmaEnv']);
-      if (is_dir($dir))
+      $dir = $this->rutas->pdf . 'dte_' . $hash . '-' . $caratula['RutEmisor'] . '_' . $caratula['RutReceptor'] . '_' . str_replace(['-', ':', 'T'], '', $caratula['TmstFirmaEnv']);
+      if (is_dir($dir)) {
         \sasco\LibreDTE\File::rmdir($dir);
-      if (!mkdir($dir))
+      }
+      if (!mkdir($dir)) {
         die('No fue posible crear directorio temporal para DTEs');
+      }
 
       // procesar cada DTEs e ir agregándolo al PDF
-      foreach ($Documentos as $DTE) {
-        if (!$DTE->getDatos())
+      foreach ($documentos as $dte) {
+        if (!$dte->getDatos())
           die('No se pudieron obtener los datos del DTE');
         $pdf = new \sasco\LibreDTE\Sii\Dte\PDF\Dte(false); // =false hoja carta, =true papel contínuo (false por defecto si no se pasa)
         $pdf->setFooterText();
         $pdf->setLogo('/var/www/html/public/dist/images/logo-sin-fondo.png'); // debe ser PNG!
-        $pdf->setResolucion(['FchResol' => $Caratula['FchResol'], 'NroResol' => $Caratula['NroResol']]);
+        $pdf->setResolucion(['FchResol' => $caratula['FchResol'], 'NroResol' => $caratula['NroResol']]);
         $pdf->setCedible(true);
-        $pdf->agregar($DTE->getDatos(), $DTE->getTED());
-        $pdf->Output($dir . '/dte_' . $Caratula['RutEmisor'] . '_' . $DTE->getID() . '-CEDIBLE.pdf', 'F');
+        $pdf->agregar($dte->getDatos(), $dte->getTED());
+        $pdf->Output($dir . '/dte_' . $caratula['RutEmisor'] . '_' . $dte->getID() . '-CEDIBLE.pdf', 'F');
       }
-      foreach ($Documentos as $DTE) {
-        if (!$DTE->getDatos())
+      foreach ($documentos as $dte) {
+        if (!$dte->getDatos())
           die('No se pudieron obtener los datos del DTE');
         $pdf = new \sasco\LibreDTE\Sii\Dte\PDF\Dte(false); // =false hoja carta, =true papel contínuo (false por defecto si no se pasa)
         $pdf->setFooterText();
         $pdf->setLogo('/var/www/html/public/dist/images/logo-sin-fondo.png'); // debe ser PNG!
-        $pdf->setResolucion(['FchResol' => $Caratula['FchResol'], 'NroResol' => $Caratula['NroResol']]);
+        $pdf->setResolucion(['FchResol' => $caratula['FchResol'], 'NroResol' => $caratula['NroResol']]);
         $pdf->setCedible(false);
-        $pdf->agregar($DTE->getDatos(), $DTE->getTED());
-        $pdf->Output($dir . '/dte_' . $Caratula['RutEmisor'] . '_' . $DTE->getID() . '.pdf', 'F');
+        $pdf->agregar($dte->getDatos(), $dte->getTED());
+        $pdf->Output($dir . '/dte_' . $caratula['RutEmisor'] . '_' . $dte->getID() . '.pdf', 'F');
       }
 
       // entregar archivo comprimido que incluirá cada uno de los DTEs
