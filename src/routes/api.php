@@ -44,9 +44,6 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     });
 
     $router->group(['prefix' => 'certificacion'], function () use ($router) {
-      /* $router->post('sendSetPruebas', 'CertificacionController@sendSetPruebas'); */
-      // $router->post('generateSetPruebas', 'CertificacionController@generateSetPruebas');
-
       $router->post('generatePDF', 'CertificacionController@generatePDF');
       $router->post('sendSetBasico', 'CertificacionController@sendSetBasico');
       $router->post('sendSetGuias', 'CertificacionController@sendSetGuias');
@@ -72,4 +69,6 @@ $router->group(['prefix' => 'api'], function () use ($router) {
   $router->get('file/{hash}', 'TemporalController@getFile');
 
   $router->post('upload/rcv', 'RcvController@upload');
+
+  $router->post('get-pdf', 'PdfController@getPdf');
 });

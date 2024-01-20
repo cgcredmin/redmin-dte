@@ -68,6 +68,7 @@ $app->configure('filesystems');
 $app->configure('libredte');
 $app->configure('database');
 $app->configure('imap');
+$app->configure('dompdf');
 
 $libredte = config('libredte');
 
@@ -132,6 +133,7 @@ $app->register(Milon\Barcode\BarcodeServiceProvider::class);
 // $app->register(Flipbox\LumenGenerator\LumenGeneratorServiceProvider::class);
 $app->register(Webklex\IMAP\Providers\LaravelServiceProvider::class);
 $app->register(Illuminate\Mail\MailServiceProvider::class);
+$app->register(\Barryvdh\DomPDF\ServiceProvider::class);
 
 /*
 |--------------------------------------------------------------------------
