@@ -257,8 +257,8 @@ class DteController extends Controller
 
       'Detalle' => 'required_if:Encabezado.IdDoc.TipoDTE,33',
       'Detalle.*.NmbItem' => 'required',
-      'Detalle.*.QtyItem' => 'required',
-      'Detalle.*.PrcItem' => 'required',
+      // 'Detalle.*.QtyItem' => 'required',
+      // 'Detalle.*.PrcItem' => 'required',
 
       // 'Caratula.RutReceptor' => 'required',
       // 'Caratula.FchResol' => 'required',
@@ -336,8 +336,8 @@ class DteController extends Controller
       $code = new DNS2D();
       $timbre =
         $ted != '' && $track_id !== false
-          ? $code->getBarcodePNG($ted, 'PDF417')
-          : '';
+        ? $code->getBarcodePNG($ted, 'PDF417')
+        : '';
 
       $filename = 'xml/dte/' . $DTE->getID() . ' - TI' . $track_id . '.xml';
       Storage::put($filename, $xml);
@@ -412,7 +412,7 @@ class DteController extends Controller
       $fileName = str_replace($this->rutas->pdf, '', $fileName);
       // dd($fileName);
 
-      if (Storage::disk('pdfs')->exists($fileName) == false) {
+      if (Storage::disk('pdfs')->exists($fileName) === false) {
         return response()->json(
           ['error' => 'No se encontró el documento'],
           400,
