@@ -45,8 +45,6 @@ class DteController extends Controller
     $dvContultante = substr($this->rutCert, -1);
     $rutConsultante = substr($this->rutCert, 0, -2);
 
-    // dd($this->dteconfig);
-
     try {
       $token = $this->token(true);
 
@@ -290,10 +288,9 @@ class DteController extends Controller
     if ($request->input('Referencia')) {
       $factura['Referencia'] = $request->input('Referencia');
     }
-    // $caratula = $request->input('Caratula');
     $caratula = [
       'RutEnvia' => $this->rutCert,
-      'RutReceptor' => $request->input('Encabezado.Receptor.RUTRecep'),
+      'RutReceptor' => '60803000-K',
       'FchResol' => $this->FchResol,
       'NroResol' => $this->NroResol,
     ];
@@ -330,7 +327,6 @@ class DteController extends Controller
       $track_id = $EnvioDTE->enviar();
       $doc = $EnvioDTE->getDocumentos()[0];
       $ted = $doc ? $doc->getTED() : '';
-      // return $ted;
 
       //Generar Timbre en PNG
       $code = new DNS2D();
@@ -339,24 +335,26 @@ class DteController extends Controller
         ? $code->getBarcodePNG($ted, 'PDF417')
         : '';
 
-      $filename = 'xml/dte/' . $DTE->getID() . ' - TI' . $track_id . '.xml';
-      Storage::put($filename, $xml);
-      $xmlstring = Storage::get($filename);
+      $filenameXml = 'xml/dte/' . $DTE->getID() . ' - TI' . $track_id . '.xml';
+      Storage::put($filenameXml, $xml);
+      $xmlstring = Storage::get($filenameXml);
+
+      $filenamePdf = 'pdf/dte/' . $DTE->getID() . ' - TI' . $track_id . '.pdf';
+      Storage::put($filenamePdf, $doc->getPDF());
+      $pdfstring = Storage::get($filenamePdf);
 
       $stringXml = $track_id !== false ? base64_encode($xmlstring) : '';
-      // dd([
-      //   'trackId' => $track_id,
-      //   'xml' => $stringXml,
-      //   'timbre' => $timbre,
-      //   'filename' => $filename,
-      // ]);
+
+      // get the email from the request, if not present search in the database
+      $email = 'dte@99.cl';
 
       dispatch(
         new \App\Jobs\SendDTE(
-          'cj.guajardo@gmail.com',
+          $email,
           $request->input('Encabezado.IdDoc.Folio'),
           $tipo_dte,
-          $filename,
+          $filenameXml,
+          $filenamePdf,
         ),
       );
 
@@ -364,6 +362,7 @@ class DteController extends Controller
         [
           'trackId' => $track_id,
           'xml' => $stringXml,
+          'pdf' => $pdfstring,
           'timbre' => "$timbre",
         ],
         200,

@@ -13,22 +13,24 @@ class SendDTE extends Job
 
   private $email;
   private $xml;
+  private $pdf;
   private $folio;
   private $tipo;
 
   // Set your API credentials and message data
-  protected $api_key_public = '83fe454ee222eb5d2de7779aae5f7f3e';
-  protected $api_key_private = 'c6b761be929e9d1a3b9b3ddfff333fb5';
+  protected $apiKeyPublic = '83fe454ee222eb5d2de7779aae5f7f3e';
+  protected $apiKeyPrivate = 'c6b761be929e9d1a3b9b3ddfff333fb5';
   protected $url = 'https://api.mailjet.com/v3.1/send';
   /**
    * Create a new job instance.
    *
    * @return void
    */
-  public function __construct($email, $folio, $tipo, $xml)
+  public function __construct($email, $folio, $tipo, $xml, $pdf = null)
   {
     $this->email = $email;
     $this->xml = $xml;
+    $this->pdf = $pdf;
     $this->folio = $folio;
     $this->tipo = $tipo;
   }
@@ -41,8 +43,8 @@ class SendDTE extends Job
   public function handle()
   {
     try {
-      $mail = Mail::to(['cj.guajardo@gmail.com'])->send(
-        new \App\Mail\DteGenerado($this->xml, null, $this->folio, $this->tipo),
+      Mail::to([$this->email])->send(
+        new \App\Mail\DteGenerado($this->xml, $this->pdf, $this->folio, $this->tipo),
       );
       Log::create([
         'message' => 'Correo enviado a ' . $this->email,
