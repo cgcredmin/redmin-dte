@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
-use sasco\LibreDTE\Sii\Folios;
-
-use sasco\LibreDTE\Estado;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Traits\DteAuthTrait;
 
 class FoliosController extends Controller
 {
+  use DteAuthTrait;
+
   public function getFolios(Request $request)
   {
     $rules = [
@@ -194,7 +195,7 @@ class FoliosController extends Controller
         'headers' => [
           'content-type' => 'application/x-www-form-urlencoded',
           'Accept' =>
-            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
           'Accept-Encoding' => 'gzip, deflate, br',
         ],
         'base_uri' => 'https://' . $this->servidor . '.sii.cl',
@@ -216,7 +217,12 @@ class FoliosController extends Controller
         return $response_code;
       }
 
-      return $response->getBody()->getContents();
+      // store the file in xml/dte/folios
+      $content = $response->getBody()->getContents();
+      $filename = $this->rutas->folios . $request->tipoDte . '.xml';
+      Storage::disk('local')->put($filename, $content);
+
+      return $content;
     } catch (\Throwable $th) {
       return response()->json(
         [

@@ -1662,8 +1662,9 @@ class CertificacionController extends Controller
 
       // procesar cada DTEs e ir agregándolo al PDF
       foreach ($documentos as $dte) {
-        if (!$dte->getDatos())
+        if (!$dte->getDatos()) {
           die('No se pudieron obtener los datos del DTE');
+        }
         $pdf = new \sasco\LibreDTE\Sii\Dte\PDF\Dte(false); // =false hoja carta, =true papel contínuo (false por defecto si no se pasa)
         $pdf->setFooterText();
         $pdf->setLogo('/var/www/html/public/dist/images/logo-sin-fondo.png'); // debe ser PNG!
@@ -1673,8 +1674,9 @@ class CertificacionController extends Controller
         $pdf->Output($dir . '/dte_' . $caratula['RutEmisor'] . '_' . $dte->getID() . '-CEDIBLE.pdf', 'F');
       }
       foreach ($documentos as $dte) {
-        if (!$dte->getDatos())
+        if (!$dte->getDatos()) {
           die('No se pudieron obtener los datos del DTE');
+        }
         $pdf = new \sasco\LibreDTE\Sii\Dte\PDF\Dte(false); // =false hoja carta, =true papel contínuo (false por defecto si no se pasa)
         $pdf->setFooterText();
         $pdf->setLogo('/var/www/html/public/dist/images/logo-sin-fondo.png'); // debe ser PNG!

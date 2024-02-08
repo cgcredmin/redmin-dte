@@ -339,31 +339,59 @@ class DteController extends Controller
       Storage::put($filenameXml, $xml);
       $xmlstring = Storage::get($filenameXml);
 
-      $filenamePdf = 'pdf/dte/' . $DTE->getID() . ' - TI' . $track_id . '.pdf';
-      Storage::put($filenamePdf, $doc->getPDF());
+      $filenamePdf = $this->makePDF($doc, $caratula, $request->input('Encabezado.IdDoc.Folio'));
       $pdfstring = Storage::get($filenamePdf);
 
       $stringXml = $track_id !== false ? base64_encode($xmlstring) : '';
+      $stringPdf = $track_id !== false ? base64_encode($pdfstring) : '';
 
-      // get the email from the request, if not present search in the database
-      $email = 'dte@99.cl';
+      // should check the document status before sending the email
+      // $rules = [
+      //   'rutEmisor' => 'required|string',
+      //   // 'rutReceptor'=>'required|string',
+      //   'tipoDoc' => 'required|numeric',
+      //   'folioDoc' => 'required|numeric',
+      //   'fechaEmision' => 'required|date',
+      //   'montoTotal' => 'required|numeric',
+      // ];
+      $error_status_check = null;
+      $statusCheck = null;
+      try {
+        $request = new Request([
+          'rutEmisor' => $request->input('Encabezado.Emisor.RUTEmisor'),
+          'tipoDoc' => $request->input('Encabezado.IdDoc.TipoDTE'),
+          'folioDoc' => $request->input('Encabezado.IdDoc.Folio'),
+          'fechaEmision' => $request->input('Encabezado.IdDoc.FchEmis'),
+          'montoTotal' => $request->input('Encabezado.Totales.MntTotal'),
+        ]);
+        $statusCheck = $this->comprobarDocumento($request);
+        // parse response as object
+        $statusCheck = json_decode($statusCheck->getContent());
+        if ($statusCheck->ESTADO === 'DNK' || $statusCheck->ESTADO === 'DOK') {
+          // get the email from the request, if not present search in the database
+          $email = 'dte@99.cl';
 
-      dispatch(
-        new \App\Jobs\SendDTE(
-          $email,
-          $request->input('Encabezado.IdDoc.Folio'),
-          $tipo_dte,
-          $filenameXml,
-          $filenamePdf,
-        ),
-      );
+          dispatch(
+            new \App\Jobs\SendDTE(
+              $email,
+              $request->input('Encabezado.IdDoc.Folio'),
+              $tipo_dte,
+              $filenameXml,
+              $filenamePdf,
+            ),
+          );
+        }
+      } catch (\Exception $e) {
+        $error_status_check = $e->getMessage();
+      }
 
       return response()->json(
         [
           'trackId' => $track_id,
           'xml' => $stringXml,
-          'pdf' => $pdfstring,
+          'pdf' => $stringPdf,
           'timbre' => "$timbre",
+          'statusCheck' => $statusCheck ?? $error_status_check,
         ],
         200,
       );
@@ -468,5 +496,32 @@ class DteController extends Controller
     }
 
     return response()->json(['error' => 'No se encontró el documento'], 400);
+  }
+
+  private function makePDF($dte, $caratula, $folio)
+  {
+    $fecha = str_replace(['-', ':', 'T'], '', $caratula['TmstFirmaEnv']);
+    $hash = md5($caratula['RutEmisor'] . '_' . $caratula['RutReceptor'] . '_' . $fecha . '_' . $folio);
+    $dir = $this->rutas->pdf . 'dte_' . $hash;
+
+    if (is_dir($dir)) {
+      \sasco\LibreDTE\File::rmdir($dir);
+    }
+    if (!mkdir($dir)) {
+      die('No fue posible crear directorio temporal para DTEs');
+    }
+
+    // =false hoja carta, =true papel contínuo (false por defecto si no se pasa)
+    $pdf = new \sasco\LibreDTE\Sii\Dte\PDF\Dte(false);
+    $pdf->setFooterText('redminDTE');
+    $pdf->setLogo('/var/www/html/public/dist/images/logo-sin-fondo.png'); // debe ser PNG!
+    $pdf->setResolucion(['FchResol' => $caratula['FchResol'], 'NroResol' => $caratula['NroResol']]);
+    $pdf->setCedible(false);
+    $pdf->agregar($dte->getDatos(), $dte->getTED());
+
+    $fullPath = $dir . '/dte_' . $caratula['RutEmisor'] . '_' . $dte->getID() . '.pdf';
+    $pdf->Output($fullPath, 'F');
+
+    return $fullPath;
   }
 }
