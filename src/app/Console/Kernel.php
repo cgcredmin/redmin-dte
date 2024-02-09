@@ -39,14 +39,9 @@ class Kernel extends ConsoleKernel
   protected function schedule(Schedule $schedule)
   {
     $schedule->command('redmin:token')->everyTwoHours();
-
     $schedule->command('redmin:borratemporales')->everyFiveMinutes();
-
     $schedule->command('redmin:rcv', ['--wts' => 'C'])->twiceDailyAt(0, 12, 0);
-    // $schedule->command('redmin:rcv', ['--wts' => 'V'])->twiceDailyAt(0, 12, 30);
     $schedule->command('redmin:estadodte')->twiceDailyAt(1, 13, 0);
-    // $schedule->command('redmin:correointercambio')->twiceDailyAt(2, 14, 0);
-    // $schedule->command('redmin:generarpdfcompras')->twiceDailyAt(2, 14, 0);
     $schedule->command('redmin:correo')->everyTenMinutes();
   }
 }

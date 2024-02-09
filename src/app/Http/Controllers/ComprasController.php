@@ -56,13 +56,16 @@ class ComprasController extends Controller
 
     $compras = Compras::where('id', '>', 0);
 
-    $this->tableFilters($request, $compras);
+    $hasFilters = $this->tableFilters($request, $compras);
 
-    $compras = $compras->orderBy('fecha_emision')->get();
-
-    $key = $this->getKey();
+    if (!$hasFilters) {
+      $compras = Compras::orderBy('fecha_emision', 'desc')->get();
+    } else {
+      $compras = $compras->orderBy('fecha_emision')->get();
+    }
 
     if (count($compras) > 0) {
+      $key = $this->getKey();
       $compras->map(function ($c) use ($key) {
         $c->pdf = "file/$c->pdf?key=$key&ext=pdf";
         $c->xml = "file/$c->xml?key=$key&ext=xml";
@@ -152,6 +155,8 @@ class ComprasController extends Controller
     if ($hasFilters === false) {
       $table = $table->take(20);
     }
+
+    return $hasFilters;
   }
 
   public function getPdf($hash)

@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Console\Commands;
+
 ini_set('memory_limit', '1G');
 
 use App\Console\Commands\ComandoBase;
@@ -10,6 +12,7 @@ use Illuminate\Support\Facades\Crypt;
 use Webklex\IMAP\Facades\Client;
 
 use App\Models\RegistroCompraVenta;
+
 class LeerCorreoIntercambio extends ComandoBase
 {
   protected $attachment_total = 0;
@@ -90,15 +93,8 @@ class LeerCorreoIntercambio extends ComandoBase
       $attachments = $message->getAttachments();
       $this->attachment_total += $attachments->count();
       foreach ($attachments as $attachment) {
-        // if ($attachments->count() >= 2) {
-        //   dd([
-        //     'content_type' => $attachment->content_type,
-        //     'mime_type' => $attachment->getMimeType(),
-        //     'name' => $attachment->getName(),
-        //   ]);
-        // }
-        $this->processXMLAttachment($attachment);
-        $this->processPDFAttachment($attachment);
+        $data = $this->processXMLAttachment($attachment);
+        $this->processPDFAttachment($attachment, $data);
       }
     }
 
@@ -187,13 +183,20 @@ class LeerCorreoIntercambio extends ComandoBase
             ]);
           }
         }
+
+        return [
+          'rutReceptor' => $rutReceptor,
+          'rutEmisor' => $rutEmisor,
+          'tipoDte' => $tipoDTE,
+          'folio' => $folio
+        ];
       } catch (\Exception $e) {
         Log::error($e->getMessage());
       }
     }
   }
 
-  private function processPDFAttachment($attachment)
+  private function processPDFAttachment($attachment, $data)
   {
     // dd($attachment);
     if ($attachment->getMimeType() == 'application/pdf') {
@@ -203,9 +206,6 @@ class LeerCorreoIntercambio extends ComandoBase
       if (!file_exists($filePath)) {
         file_put_contents($filePath, $attachment->content);
       }
-
-      //get data from pdf filename
-      $data = $this->getDataFromFilename($attachment->name);
 
       $folios[] = $data['folio'];
       $csv[] = $data;
@@ -279,35 +279,6 @@ class LeerCorreoIntercambio extends ComandoBase
     $pdf->Output($pdf_name, 'F');
 
     return $pdf_name;
-  }
-
-  private function getDataFromFilename($fileName)
-  {
-    $fileName = str_replace(['.pdf', '.xml', '.txt'], '', $fileName);
-
-    $rutReceptor = substr($fileName, 0, strpos($fileName, '-') + 2);
-    $rutEmisor = substr(
-      $fileName,
-      strlen($rutReceptor),
-      strpos($fileName, '-') + 2,
-    );
-    $tipoDte = intval(
-      substr($fileName, strlen($rutEmisor) + strlen($rutReceptor), 2),
-    );
-    $folio = intval(
-      str_replace($rutReceptor . $rutEmisor . strval($tipoDte), '', $fileName),
-    );
-
-    //remove Dv from rut
-    $rutReceptor = substr($rutReceptor, 0, -2);
-    $rutEmisor = substr($rutEmisor, 0, -2);
-
-    return [
-      'rutReceptor' => $rutReceptor,
-      'rutEmisor' => $rutEmisor,
-      'tipoDte' => $tipoDte,
-      'folio' => $folio,
-    ];
   }
 
   private function getAccessToken($PARAMS)
