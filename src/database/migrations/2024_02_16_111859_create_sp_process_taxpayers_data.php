@@ -37,6 +37,7 @@ return new class extends Migration
                 DROP TABLE IF EXISTS temp_bulk_copy;
                 CREATE TEMPORARY TABLE IF NOT EXISTS temp_bulk_copy (
                     rut              varchar(20),
+                    digito_v         varchar(1),
                     razon_social     varchar(255),
                     nro_resolucion   varchar(50),
                     fecha_resolucion varchar(20),
@@ -77,15 +78,15 @@ return new class extends Migration
                                     SET c_razon_social = REPLACE(c_razon_social, "'", "''");
                                     SET c_razon_social = REPLACE(c_razon_social, '"', '""');
 
-                                    INSERT INTO temp_bulk_copy (rut, razon_social, nro_resolucion, fecha_resolucion, correo)
-                                    VALUES (c_rut, c_razon_social, c_nro_resolucion, c_fecha_resolucion, c_correo);
+                                    INSERT INTO temp_bulk_copy (rut, digito_v, razon_social, nro_resolucion, fecha_resolucion, correo)
+                                    VALUES (rut_numeros, digito_verificador, c_razon_social, c_nro_resolucion, c_fecha_resolucion, c_correo);
 
                                     SET contador = contador + 1;
 
                                     IF contador >= 50000 THEN
                                         #Insertar todas las filas acumuladas en la tabla final
                                         INSERT INTO contribuyentes (rut, dv, razon_social, nro_resolucion, fecha_resolucion, correo)
-                                        SELECT rut_numeros, digito_verificador, razon_social, nro_resolucion, fecha_resolucion, correo
+                                        SELECT rut, digito_v, razon_social, nro_resolucion, fecha_resolucion, correo
                                         FROM temp_bulk_copy;
 
                                         #Limpiar la tabla temporal
