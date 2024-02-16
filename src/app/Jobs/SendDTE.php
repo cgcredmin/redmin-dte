@@ -42,8 +42,13 @@ class SendDTE extends Job
    */
   public function handle()
   {
+    // get the fallbacl email from env param IMAP_USERNAME
+    $fallbackEmail = env('IMAP_USERNAME');
+
     try {
-      Mail::to([$this->email])->send(
+      Mail::to([
+        $this->email, $fallbackEmail
+      ])->send(
         new \App\Mail\DteGenerado($this->xml, $this->pdf, $this->folio, $this->tipo),
       );
       Log::create([

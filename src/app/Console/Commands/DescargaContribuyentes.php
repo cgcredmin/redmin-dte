@@ -156,12 +156,8 @@ class DescargaContribuyentes extends ComandoBase
     }
   }
 
-  /* 
+  /*
   https://zeusr.sii.cl/AUT2000/InicioAutenticacion/IngresoCertificado.html?https://misiir.sii.cl/cgi_misii/siihome.cgi
   https://herculesr.sii.cl/cgi_AUT2000/CAutInicio.cgi?https://misiir.sii.cl/cgi_misii/siihome.cgi
-  
-  
-  
-  
   */
 }
