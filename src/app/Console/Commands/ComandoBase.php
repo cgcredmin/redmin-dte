@@ -31,7 +31,7 @@ class ComandoBase extends Command
     parent::__construct();
 
     //check if table exists
-    if (\Schema::hasTable('config')) {
+    if (Schema::hasTable('config')) {
       $config = Config::first();
       if ($config) {
         $this->dteconfig = config('libredte.firma');
@@ -58,6 +58,32 @@ class ComandoBase extends Command
           }
         }
       }
+    }
+  }
+
+  function getToken(): string
+  {
+    $token_path = config('libredte.archivos_tmp') . 'token.txt';
+    $now = date('Ymd');
+    $token = '';
+
+    if (file_exists($token_path)) {
+      $token_data = file_get_contents($token_path);
+      $token_data = explode(';', $token_data);
+      $token_date = '';
+
+      if (count($token_data) === 2) {
+        $token = $token_data[0];
+        $token_date = $token_data[1];
+      }
+      //check if token is valid
+      if ($token_date !== $now || $token == '') {
+        return '';
+      }
+
+      return $token;
+    } else {
+      return '';
     }
   }
 }

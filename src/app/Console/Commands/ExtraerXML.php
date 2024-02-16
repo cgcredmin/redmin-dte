@@ -87,17 +87,10 @@ class ExtraerXML extends ComandoBase
     $this->info('ExtraerXML >> Procesando ' . $messages->count() . ' mensajes');
 
     foreach ($messages as $message) {
-      // dd($message);
       $attachments = $message->getAttachments();
       $this->attachment_total += $attachments->count();
       foreach ($attachments as $attachment) {
-        // if ($attachments->count() >= 2) {
-        //   dd([
-        //     'content_type' => $attachment->content_type,
-        //     'mime_type' => $attachment->getMimeType(),
-        //     'name' => $attachment->getName(),
-        //   ]);
-        // }
+
         $success = $this->processXMLAttachment($attachment);
         if ($success) {
           $message->setFlag('Seen');
@@ -194,7 +187,6 @@ class ExtraerXML extends ComandoBase
           'razon_social_emisor' => (string) $doc->Emisor->RznSoc ?? '',
           'rut_receptor' => $rutReceptor,
           'fecha_emision' => $fechaEmision,
-          'fecha_recepcion' => date('Y-m-d H:i:s'),
           'monto_neto' => $montoNeto,
           'monto_exento' => $MntExe,
           'tipo_dte' => $tipoDTE,
@@ -207,9 +199,9 @@ class ExtraerXML extends ComandoBase
 
         //find registro_compra_venta with the given data
         $compra = Compras::where($data)->first();
-
         // dd($compra);
         if (!$compra) {
+          $data['fecha_recepcion'] = date('Y-m-d H:i:s');
           $compra = Compras::create($data);
         }
 

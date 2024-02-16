@@ -18,6 +18,8 @@ use App\Models\Tempfiles;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 
+use App\Models\Contribuyentes;
+
 class DteController extends Controller
 {
   public function comprobarDocumento(Request $request)
@@ -369,17 +371,22 @@ class DteController extends Controller
         $statusCheck = json_decode($statusCheck->getContent());
         if ($statusCheck->ESTADO === 'DNK' || $statusCheck->ESTADO === 'DOK') {
           // get the email from the request, if not present search in the database
-          $email = 'dte@99.cl';
-
-          dispatch(
-            new \App\Jobs\SendDTE(
-              $email,
-              $request->input('Encabezado.IdDoc.Folio'),
-              $tipo_dte,
-              $filenameXml,
-              $filenamePdf,
-            ),
-          );
+          if ($this->ambiente === 'produccion') {
+            $email = Contribuyentes::where('rut', $request->input('Encabezado.Receptor.RUTRecep'))->first()->email ?? '';
+          } else {
+            $email = 'cguajardo@redmin.cl';
+          }
+          if ($email) {
+            dispatch(
+              new \App\Jobs\SendDTE(
+                $email,
+                $request->input('Encabezado.IdDoc.Folio'),
+                $tipo_dte,
+                $filenameXml,
+                $filenamePdf,
+              ),
+            );
+          }
         }
       } catch (\Exception $e) {
         $error_status_check = $e->getMessage();
