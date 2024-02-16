@@ -100,7 +100,7 @@ return new class extends Migration
 
                             IF contador > 0 THEN
                                 INSERT INTO contribuyentes (rut, dv, razon_social, nro_resolucion, fecha_resolucion, direccion_regional, correo)
-                                SELECT rut_numeros, digito_verificador, razon_social, nro_resolucion, fecha_resolucion, '' as direccion_regional, correo
+                                SELECT rut, digito_v, razon_social, nro_resolucion, fecha_resolucion, '' as direccion_regional, correo
                                 FROM temp_bulk_copy;
                             END IF;
 
