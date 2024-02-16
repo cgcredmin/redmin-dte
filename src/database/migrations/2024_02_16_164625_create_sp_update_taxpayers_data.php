@@ -1,24 +1,24 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
-    public function up()
-    {
-        DB::statement($this->dropSP());
-        DB::statement($this->createSP());
-    }
+  /**
+   * Run the migrations.
+   *
+   * @return void
+   */
+  public function up()
+  {
+    DB::statement($this->dropSP());
+    DB::statement($this->createSP());
+  }
 
-    private function createSP(){
-        return <<<SQL
+  private function createSP()
+  {
+    return <<<SQL
             CREATE PROCEDURE `updateTaxpayersData` (IN `p_rut` varchar(15), IN `p_correo` varchar(100), IN `p_direccion_regional` varchar(255), IN `p_razon_social` varchar(255),IN `p_nro_resolucion` varchar(8),IN `p_fecha_resolucion` varchar(15))
             BEGIN
                 
@@ -45,18 +45,19 @@ return new class extends Migration
 
             END;    
         SQL;
-    }
+  }
 
-    private function dropSP(){
-        return <<<SQL
+  private function dropSP()
+  {
+    return <<<SQL
             DROP PROCEDURE IF EXISTS `updateTaxpayersData`;
         SQL;
-    }
+  }
 
-    public function down()
-    {
-        return <<<SQL
+  public function down()
+  {
+    return <<<SQL
             DROP PROCEDURE IF EXISTS `updateTaxpayersData`;
         SQL;
-    }
+  }
 };

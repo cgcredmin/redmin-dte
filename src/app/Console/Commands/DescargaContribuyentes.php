@@ -8,6 +8,9 @@ use App\Console\Commands\ComandoBase;
 use Illuminate\Support\Facades\Storage;
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
+use Illuminate\Support\Facades\DB;
+
+use App\Jobs\ProcessBulkCopy;
 
 class DescargaContribuyentes extends ComandoBase
 {
@@ -85,8 +88,8 @@ class DescargaContribuyentes extends ComandoBase
     $output = '';
 
     try {
-      $url = "https://palena.sii.cl/cvc_cgi/dte/ce_empresas_dwnld";
-      // $url = "https://{$this->servidor}.sii.cl/cvc_cgi/dte/ce_empresas_dwnld";
+      // $url = "https://palena.sii.cl/cvc_cgi/dte/ce_empresas_dwnld";
+      $url = "https://{$this->servidor}.sii.cl/cvc_cgi/dte/ce_empresas_dwnld";
       $client = new Client([
         'headers' => [
           'content-type' => 'application/json',
@@ -129,30 +132,33 @@ class DescargaContribuyentes extends ComandoBase
     $size = Storage::disk('local')->size('contribuyentes.csv');
     // if the file is bigger than 20Mb, then should be OK
     if ($size > 20000000) {
-      $csvFile = Storage::disk('local')->url('contribuyentes.csv');
-      $this->info('OK');
 
-      // TODO: start a process to import the file to the database
-      if(file_exists($csvFile)){
-        try {
-          $sql = "LOAD DATA LOCAL INFILE '$csvFile'
-                  INTO TABLE bulkCopyTable
-                  CHARACTER SET utf8
-                  FIELDS TERMINATED BY ';'
-                  LINES TERMINATED BY '\n'
-                  IGNORE 1 LINES";
-          
-          $stmt = $this->db->prepare($sql);
-          $stmt->execute();
-          
-          return true;
-        } catch (Exception $e) {
-          dd($e->getMessage());
-        }
-      } else {
-        return "No existe";
+      $csvFile = storage_path('app/contribuyentes.csv');
+      if (!file_exists($csvFile)) {
+        $this->error('Error al descargar el listado de contribuyentes');
+        exit(1);
       }
 
+      try {
+        $sql = "LOAD DATA LOCAL INFILE '$csvFile'
+        INTO TABLE bulkCopyTable
+        CHARACTER SET utf8
+        FIELDS TERMINATED BY ';'
+        LINES TERMINATED BY '\n'
+        IGNORE 1 LINES";
+
+        DB::connection('mysql')->getpdo()->exec($sql);
+
+        // launch job ProcessBulkCopy to process the data, queue it for later (5min)
+        dispatch(new ProcessBulkCopy())->delay(now()->addMinutes(5));
+
+        $this->info('OK');
+      } catch (\Exception $e) {
+        // dd($e->getMessage());
+        $this->error('Error al insertar los datos en la base de datos');
+        $this->error($e->getMessage());
+        exit(1);
+      }
     } else {
       $this->error('Error al descargar el listado de contribuyentes');
       exit(1);

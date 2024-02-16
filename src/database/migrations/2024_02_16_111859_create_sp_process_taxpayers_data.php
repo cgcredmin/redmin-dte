@@ -1,24 +1,24 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
-    public function up()
-    {
-        DB::statement($this->dropSP());
-        DB::statement($this->createSP());
-    }
+  /**
+   * Run the migrations.
+   *
+   * @return void
+   */
+  public function up()
+  {
+    DB::statement($this->dropSP());
+    DB::statement($this->createSP());
+  }
 
-    private function createSp(){
-        return <<<SQL
+  private function createSp()
+  {
+    return <<<SQL
             CREATE PROCEDURE `redmin_dte`.`processTaxpayersData` (IN `p_limit` int)
             BEGIN
 
@@ -85,8 +85,8 @@ return new class extends Migration
 
                                     IF contador >= 50000 THEN
                                         #Insertar todas las filas acumuladas en la tabla final
-                                        INSERT INTO contribuyentes (rut, dv, razon_social, nro_resolucion, fecha_resolucion, correo)
-                                        SELECT rut, digito_v, razon_social, nro_resolucion, fecha_resolucion, correo
+                                        INSERT INTO contribuyentes (rut, dv, razon_social, nro_resolucion, fecha_resolucion, direccion_regional, correo)
+                                        SELECT rut, digito_v, razon_social, nro_resolucion, fecha_resolucion, '' as direccion_regional, correo
                                         FROM temp_bulk_copy;
 
                                         #Limpiar la tabla temporal
@@ -99,8 +99,8 @@ return new class extends Migration
                             END LOOP loop_taxprayers;
 
                             IF contador > 0 THEN
-                                INSERT INTO contribuyentes (rut, dv, razon_social, nro_resolucion, fecha_resolucion, correo)
-                                SELECT rut_numeros, digito_verificador, razon_social, nro_resolucion, fecha_resolucion, correo
+                                INSERT INTO contribuyentes (rut, dv, razon_social, nro_resolucion, fecha_resolucion, direccion_regional, correo)
+                                SELECT rut_numeros, digito_verificador, razon_social, nro_resolucion, fecha_resolucion, '' as direccion_regional, correo
                                 FROM temp_bulk_copy;
                             END IF;
 
@@ -110,18 +110,19 @@ return new class extends Migration
 
             END;
         SQL;
-    }
+  }
 
-    private function dropSP(){
-        return <<<SQL
+  private function dropSP()
+  {
+    return <<<SQL
             DROP PROCEDURE IF EXISTS `processTaxpayersData`;
         SQL;
-    }
-    
-    public function down()
-    {
-        return <<<SQL
+  }
+
+  public function down()
+  {
+    return <<<SQL
             DROP PROCEDURE IF EXISTS `processTaxpayersData`;
         SQL;
-    }
+  }
 };
