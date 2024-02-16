@@ -11,12 +11,18 @@ return new class extends Migration
      *
      * @return void
      */
+
     public function up()
     {
+        DB::statement($this->dropSP());
+        DB::statement($this->createSP());
+    }
+
+    private function createSP(){
         return <<<SQL
             CREATE PROCEDURE `getTaxpayersData` (IN `p_limit` int)
             BEGIN
-
+    
                 #Cursor variables
                 DECLARE c_field_1 varchar(255);
                 DECLARE c_field_2 varchar(255);
@@ -29,17 +35,17 @@ return new class extends Migration
                 DECLARE c_field_9 varchar(255);
                 DECLARE c_field_10 varchar(255);
                 DECLARE c_id      int;
-
+    
                 #Otras variables 
                 DECLARE rut 		 varchar(20);
                 DECLARE rutFound     BOOL DEFAULT FALSE; 
                 DECLARE email	     varchar(100);
                 DECLARE emailFound   BOOL DEFAULT FALSE;
-
+    
                 #Expresiones regulares
                 DECLARE rutRegExp 	varchar(50)  DEFAULT '^[0-9]{6,8}-[0-9kK]$';
                 DECLARE emailRegExp varchar(100) DEFAULT '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$';
-
+    
                 DROP TABLE IF EXISTS temp_wrong_data;
                 CREATE TEMPORARY TABLE IF NOT EXISTS temp_wrong_data AS (
                     SELECT BC.field_1 AS field_1
@@ -60,7 +66,7 @@ return new class extends Migration
                         OR field_5 IS NULL
                         OR field_3 NOT REGEXP '^[0-9]+$'
                 );
-
+    
                 #Construyo cursor
                 BEGIN
                     DECLARE taxpayersCursor CURSOR FOR
@@ -77,19 +83,19 @@ return new class extends Migration
                             , id
                         FROM temp_wrong_data AS WD
                         WHERE WD.field_2 IS NOT NULL;
-
+    
                     OPEN taxpayersCursor;
                         BEGIN
                             DECLARE fin_l bool default FALSE;
                             DECLARE continue HANDLER FOR NOT FOUND SET fin_l = TRUE; 
-
+    
                             loop_taxprayers: LOOP
                                 FETCH taxpayersCursor INTO c_field_1, c_field_2, c_field_3, c_field_4, c_field_5
                                                         , c_field_6, c_field_7, c_field_8, c_field_9, c_field_10, c_id;
                                     IF fin_l THEN
                                         LEAVE loop_taxprayers;
                                     END IF;
-
+    
                                     #Busco rut del contribuyente
                                     IF c_field_1 REGEXP rutRegExp THEN
                                         SET rut = c_field_1;
@@ -122,7 +128,7 @@ return new class extends Migration
                                         SET rut = c_field_10;
                                         SET rutFound = TRUE;
                                     END IF;
-
+    
                                     #Busco correo del contribuyente
                                     IF c_field_1 REGEXP emailRegExp THEN
                                         SET email = c_field_1;
@@ -155,38 +161,33 @@ return new class extends Migration
                                         SET email = c_field_10;
                                         SET emailFound = TRUE;
                                     END IF;
-
+    
                                     IF rutFound = TRUE AND emailFound = TRUE THEN
                                         INSERT INTO contribuyentes_erroneos (rut, correo)
                                         VALUES (rut, email);
-
+    
                                         SET rut = '';
                                         SET email = '';
                                         SET rutFound = FALSE;
                                         SET emailFound = FALSE;
-
+    
                                     END IF;
-
+    
                             END LOOP loop_taxprayers;
                         END;
                     CLOSE taxpayersCursor;
                 END;
-
+    
                 SELECT 'PROCESO FINALIZADO CORRECTAMENTE';
-
+    
             END;
         SQL;
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
-    {
+    private function dropSP(){
         return <<<SQL
             DROP PROCEDURE IF EXISTS `getTaxpayersData`;
         SQL;
     }
+
 };

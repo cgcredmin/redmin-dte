@@ -13,8 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
+        DB::statement($this->dropSP());
+        DB::statement($this->createSP());
+    }
+
+    private function createSp(){
         return <<<SQL
-            CREATE PROCEDURE `processTaxpayersData` (IN `p_limit` int)
+            CREATE PROCEDURE `redmin_dte`.`processTaxpayersData` (IN `p_limit` int)
             BEGIN
 
                 #Cursor variables
@@ -106,11 +111,12 @@ return new class extends Migration
         SQL;
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
+    private function dropSP(){
+        return <<<SQL
+            DROP PROCEDURE IF EXISTS `processTaxpayersData`;
+        SQL;
+    }
+    
     public function down()
     {
         return <<<SQL

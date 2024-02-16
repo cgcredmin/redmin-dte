@@ -129,9 +129,29 @@ class DescargaContribuyentes extends ComandoBase
     $size = Storage::disk('local')->size('contribuyentes.csv');
     // if the file is bigger than 20Mb, then should be OK
     if ($size > 20000000) {
+      $csvFile = Storage::disk('local')->url('contribuyentes.csv');
       $this->info('OK');
 
       // TODO: start a process to import the file to the database
+      if(file_exists($csvFile)){
+        try {
+          $sql = "LOAD DATA LOCAL INFILE '$csvFile'
+                  INTO TABLE bulkCopyTable
+                  CHARACTER SET utf8
+                  FIELDS TERMINATED BY ';'
+                  LINES TERMINATED BY '\n'
+                  IGNORE 1 LINES";
+          
+          $stmt = $this->db->prepare($sql);
+          $stmt->execute();
+          
+          return true;
+        } catch (Exception $e) {
+          dd($e->getMessage());
+        }
+      } else {
+        return "No existe";
+      }
 
     } else {
       $this->error('Error al descargar el listado de contribuyentes');
