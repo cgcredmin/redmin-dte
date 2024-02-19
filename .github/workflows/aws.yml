@@ -39,13 +39,10 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
+        echo "ecr-registry=$ECR_REGISTRY"
         IMAGE_TAG=$(date +'%y.%m.%d')
-        # Build a docker container and
-        # push it to ECR so that it can
-        # be deployed to ECS.
-        DOCKER_BUILDKIT=1 docker build -t $CONTAINER_NAME:$IMAGE_TAG -t $CONTAINER_NAME:latest .
         # DOCKER_BUILDKIT=1 docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
-        docker tag redmindte:"$IMAGE_TAG" ${ECR_REPOSITORY}:"$IMAGE_TAG"
+        DOCKER_BUILDKIT=1 docker build -t $CONTAINER_NAME:$IMAGE_TAG -t $CONTAINER_NAME:latest .
+        docker tag $CONTAINER_NAME:"$IMAGE_TAG" ${ECR_REPOSITORY}:"$IMAGE_TAG"
         docker push $ECR_REPOSITORY:$IMAGE_TAG
-        echo "::set-output ecr-registry=$ECR_REGISTRY"
-        echo "image=$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+        echo "image=$ECR_REPOSITORY:$IMAGE_TAG"
