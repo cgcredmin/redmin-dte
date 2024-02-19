@@ -44,5 +44,5 @@ jobs:
         # DOCKER_BUILDKIT=1 docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
         DOCKER_BUILDKIT=1 docker build -t $CONTAINER_NAME:$IMAGE_TAG -t $CONTAINER_NAME:latest .
         docker tag $CONTAINER_NAME:"$IMAGE_TAG" ${ECR_REPOSITORY}:"$IMAGE_TAG"
-        docker push $ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REPOSITORY:"$IMAGE_TAG"
         echo "image=$ECR_REPOSITORY:$IMAGE_TAG"
