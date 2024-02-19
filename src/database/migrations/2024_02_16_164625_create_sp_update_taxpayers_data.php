@@ -19,7 +19,7 @@ return new class extends Migration
   private function createSP()
   {
     return <<<SQL
-            CREATE PROCEDURE updateTaxpayersData (IN `p_rut` varchar(15), IN `p_correo` varchar(100), IN `p_direccion_regional` varchar(255), IN `p_razon_social` varchar(255),IN `p_nro_resolucion` varchar(8),IN `p_fecha_resolucion` varchar(15))
+            CREATE PROCEDURE `updateTaxpayersData` (IN `p_rut` varchar(15), IN `p_correo` varchar(100), IN `p_direccion_regional` varchar(255), IN `p_razon_social` varchar(255), IN `p_nro_resolucion` varchar(8), IN `p_fecha_resolucion` varchar(15))
             BEGIN
               
               #Variables
@@ -29,7 +29,7 @@ return new class extends Migration
               DECLARE fecha_resolucion_cont 	varchar(15);
               DECLARE direccion_regional_cont varchar(200);
               DECLARE correo_cont             varchar(100);
-              
+
               DECLARE rut_numeros		   int;
               DECLARE digito_verificador varchar(1);
 
@@ -85,16 +85,6 @@ return new class extends Migration
                   WHERE id = id_contribuyente;
                 END IF;
 
-                UPDATE contribuyentes 
-                  SET razon_social = p_razon_social
-                    , nro_resolucion = p_nro_resolucion
-                    , fecha_resolucion = p_fecha_resolucion
-                    , direccion_regional = p_direccion_regional
-                    , correo = p_correo
-                WHERE id = id_contribuyente;
-
-                SELECT "INFORMACION ACTUALIZADA";
-
               ELSE 
 
                 #Aqui se separa el rut en dos partes
@@ -107,7 +97,7 @@ return new class extends Migration
                 SELECT "CONTRIBUYENTE CREADO";
               END IF;
 
-            END; 
+            END;
         SQL;
   }
 
