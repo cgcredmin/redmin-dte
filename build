@@ -1,0 +1,152 @@
+#!/bin/bash
+
+APP_NAME="redmindte"
+REPOSITORY="public.ecr.aws/z5x9j2p1/"
+SLIM_VERSION="1.40.11"
+
+# check id docker-slim is installed, if not, then download and install it
+if ! [ -x "$(command -v slim)" ]; then
+  # Latest Mac binaries (curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.11/dist_mac.zip)
+  # Latest Mac M1 binaries (curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.11/dist_mac_m1.zip)
+  # Latest Linux binaries (curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.11/dist_linux.tar.gz)
+  # Latest Linux ARM binaries (curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.11/dist_linux_arm.tar.gz)
+  # Latest Linux ARM64 binaries (curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.11/dist_linux_arm64.tar.gz)
+
+  # Set the dist file name based on the OS
+  DIST_FILE_NAME="dist_linux"
+  DIST_FILE_EXT="tar.gz"
+  if [ "$(uname)" == "Darwin" ]; then
+    DIST_FILE_NAME="dist_mac"
+    if [[ $(uname -m) == "arm" ]]; then
+      DIST_FILE_NAME="dist_mac_m1"
+    fi
+    DIST_FILE_EXT="zip"
+  elif [ "$(uname)" == "Linux" ]; then
+    DIST_FILE_NAME="dist_linux"
+    if [[ $(uname -m) == "arm" ]]; then
+      DIST_FILE_NAME="dist_linux_arm"
+    elif [[ $(uname -m) == "aarch64" ]]; then
+      DIST_FILE_NAME="dist_linux_arm64"
+    fi
+  fi
+  echo 'Installing docker-slim...'
+  # Download the latest docker-slim release
+  curl -L https://downloads.dockerslim.com/releases/${SLIM_VERSION}/${DIST_FILE_NAME}.${DIST_FILE_EXT} --output ${DIST_FILE_NAME}.${DIST_FILE_EXT}
+
+  # Extract the tar file
+  if [ "$DIST_FILE_EXT" == "zip" ]; then
+    unzip ${DIST_FILE_NAME}.${DIST_FILE_EXT}
+  else
+    tar xvf ${DIST_FILE_NAME}.${DIST_FILE_EXT}
+  fi
+
+  # Move docker-slim to /usr/local/bin
+  sudo mv ${DIST_FILE_NAME}/slim /usr/local/bin/
+  sudo mv ${DIST_FILE_NAME}/slim-sensor /usr/local/bin/
+
+  # Remove the downloaded files
+  rm -rf ${DIST_FILE_NAME}
+  rm -rf ${DIST_FILE_NAME}.${DIST_FILE_EXT}
+
+  # source the bashrc file
+  source ~/.bashrc
+fi
+# slim version
+
+# check if libnotify is installed, if not, then install it --only for linux
+if [ -x "$(command -v apt-get)" ]; then
+  if ! [ -x "$(command -v libnotify-bin)" ]; then
+    echo 'Installing libnotify-bin...'
+    sudo apt-get install libnotify-bin
+  fi
+fi
+
+log() {
+
+  TEXT=$2
+  centered=$3
+  bold=0
+  backgroundColor=0
+  foregroundColor=37
+
+  if [ "$4" == 1 ]; then
+    bold=1
+  fi
+
+  #BackgroundColor
+  case $5 in
+  "white") backgroundColor=40 ;;
+  "red") backgroundColor=41 ;;
+  "green") backgroundColor=42 ;;
+  "yellow") backgroundColor=43 ;;
+  "blue") backgroundColor=44 ;;
+  "purple") backgroundColor=45 ;;
+  "cyan") backgroundColor=46 ;;
+  "gray") backgroundColor=47 ;;
+  esac
+
+  #ForegroundColor
+  case $1 in
+  "gray") foregroundColor=30 ;;
+  "red") foregroundColor=31 ;;
+  "green") foregroundColor=32 ;;
+  "yellow") foregroundColor=33 ;;
+  "blue") foregroundColor=34 ;;
+  "purple") foregroundColor=35 ;;
+  "cyan") foregroundColor=36 ;;
+  "white") foregroundColor=37 ;;
+  esac
+
+  style="\033[${bold};${foregroundColor}"
+  if [[ backgroundColor -ne 0 ]]; then
+    style="\033[${bold};${foregroundColor};${backgroundColor}"
+  fi
+
+  if [[ "$centered" == 1 ]]; then
+    printf "${style}m%*s\033[0m\n" $(((${#TEXT} + $(tput cols)) / 2)) "$TEXT"
+  else
+    echo -e "${style}m$TEXT\033[0m"
+  fi
+}
+sendNotification() {
+  N_TITLE="${APP_NAME} - ${ENVIRONMENT} BUILDER"
+  N_MESSAGE="$1"
+
+  if [ "$(uname)" == "Darwin" ]; then
+    ICN_RESOURCE="$PWD/src/public/redmin.icns"
+    DATA="\"$N_MESSAGE\" with title \"$N_TITLE\" sound name \"Glass\""
+    osascript -e "display notification $DATA"
+  elif [ "$(uname)" == "Linux" ]; then
+    # Check if libnotify is installed
+    if [ -x "$(command -v notify-send)" ]; then
+      notify-send -u normal -a $APP_NAME -i dialog-information $N_TITLE $N_MESSAGE
+    fi
+  fi
+}
+
+log "green" "AWS LOGIN"
+# aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REPOSITORY}
+aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/z5x9j2p1
+
+tag=$(date +"%y.%m.%d")
+
+log "green" "TAG: $tag"
+log "yellow" "PUSH TO AWS ${APP_NAME}:$tag"
+
+if [[ $(uname -m) == "arm64" ]]; then
+  log "yellow" "BUILDING IMAGE WITH BUILDX"
+  docker buildx build --platform=linux/amd64 --load -t ${APP_NAME}:"$tag" -t ${APP_NAME}:latest .
+else
+  log "yellow" "BUILDING IMAGE"
+  DOCKER_BUILDKIT=1 docker build -t ${APP_NAME}:"$tag" -t ${APP_NAME}:latest .
+fi
+sendNotification "IMAGE Build" "Image ${APP_NAME}:$tag builded"
+
+# use docker-slim to compress the image
+log "yellow" "COMPRESSING IMAGE"
+slim --report nginx-build-report.json build --target ${APP_NAME}:$tag --copy-meta-artifacts .
+
+docker tag ${APP_NAME}:"$tag" ${REPOSITORY}:"$tag"
+docker push ${REPOSITORY}${APP_NAME}:"$tag"
+echo "docker push ${REPOSITORY}${APP_NAME}:$tag"
+sendNotification "IMAGE Pushed" "Image ${APP_NAME}:$tag pushed"

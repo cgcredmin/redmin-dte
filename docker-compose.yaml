@@ -7,33 +7,31 @@ services:
     tty: true
     ports: 
       -  "80:80" 
-      -  "443:443" 
     volumes: 
       - ./config/nginx/nginx.app.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./config/ssl/cert.crt:/etc/ssl/private/cert.crt
-      - ./config/ssl/cert.key:/etc/ssl/private/cert.key
+      - ./src:/var/www/html
     networks:
-      - app-network
+      - dockerdb_default
     links:
       - app
 
   app: 
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: app
+      dockerfile: Dockerfile.dev
+    container_name: redmindte
     restart: unless-stopped
     tty: true
-    ports:
-      - "8000:80"
+    expose: 
+      - "9000"
     env_file:
       - ./config/env_params
     volumes:
-      - ./app_storage/:/var/www/html/storage/
+      - ./src:/var/www/html
     networks:
-      - app-network
+      - dockerdb_default
 
 #Docker Networks
 networks:
-  app-network:
-    driver: bridge
+  dockerdb_default:
+    external: true
