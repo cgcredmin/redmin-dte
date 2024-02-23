@@ -146,7 +146,7 @@ sendNotification "IMAGE Build" "Image ${APP_NAME}:$tag builded"
 log "yellow" "COMPRESSING IMAGE"
 slim --report nginx-build-report.json build --target ${APP_NAME}:$tag --copy-meta-artifacts .
 
-docker tag ${APP_NAME}:"$tag" ${REPOSITORY}:"$tag"
+docker tag ${APP_NAME}:"$tag" ${REPOSITORY}${APP_NAME}:"$tag"
 docker push ${REPOSITORY}${APP_NAME}:"$tag"
 echo "docker push ${REPOSITORY}${APP_NAME}:$tag"
 sendNotification "IMAGE Pushed" "Image ${APP_NAME}:$tag pushed"
