@@ -8,7 +8,7 @@ config/database/**/*.sql
 config/env_params
 src/.env
 src/rcv
-src/**/node_modules
+**/node_modules
 src/.idea
 src/scrapper/
 src/cron.log
@@ -19,5 +19,7 @@ src/vendor
 /web-scrapper
 .docker
 src/scrapper/RegistroCompraVentaScrapper
-src/.local-chromium
-src/DaCSV.csv
+**/.local-chromium
+**/.csv
+nginx-build-report.json
+Dockerfile copy
