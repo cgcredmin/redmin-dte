@@ -64,6 +64,8 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     });
 
     $router->post('test', 'TestController@test');
+
+    $router->post('get-crucial-data', 'InitController@getCrucialData');
   });
 
   $router->get('file/{hash}', 'TemporalController@getFile');
