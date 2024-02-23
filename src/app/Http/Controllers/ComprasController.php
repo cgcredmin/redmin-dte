@@ -27,8 +27,8 @@ class ComprasController extends Controller
   private function getRules()
   {
     return [
-      'rut' => 'numeric|exists:registro_compra_venta,detRutDoc',
-      'folio' => 'numeric|exists:registro_compra_venta,detNroDoc',
+      'rut' => 'string|exists:compras,rut_emisor',
+      'folio' => 'numeric|exists:compras,folio',
       'tipo' => 'numeric|in:' . $this->getTiposImploded(),
       'estado' => 'string|in:' . implode(',', $this->getKeysDteEstados()),
       'desde' => 'date',
