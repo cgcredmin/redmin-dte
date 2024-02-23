@@ -4,7 +4,8 @@ namespace App\Http\Traits;
 
 use sasco\LibreDTE\FirmaElectronica;
 use sasco\LibreDTE\Sii\Autenticacion;
-
+use GuzzleHttp\Client;
+use GuzzleHttp\Cookie\CookieJar;
 use App\Models\Config;
 
 trait DteAuthTrait
@@ -111,5 +112,31 @@ trait DteAuthTrait
       return response()->json(['error' => $e->getMessage()], 400);
     }
     return null;
+  }
+
+  private function loginWithCert(){
+      $cookies = new CookieJar();
+
+      $credentials = [$this->dteconfig['pem'], $this->dteconfig['pass']];
+
+      $client = new Client();
+      $client->request(
+          'GET',
+          'https://herculesr.sii.cl/cgi_AUT2000/CAutInicio.cgi?http://www.sii.cl',
+          [
+              [0 => 'path/cert.pem', 1 => 'passwordcert'],
+              'cert' => $credentials,
+              'query' => [
+                  'rutcntr' => $this->rutCert,
+                  'rut' => explode('-', $this->rutCert)[0],
+                  'referencia' => 'https://www.sii.cl',
+                  'dv' => explode('-', $this->rutCert)[1],
+              ],
+              'cookies' => $cookies,
+          ],
+      );
+
+      return [$client, $cookies];
+
   }
 }
