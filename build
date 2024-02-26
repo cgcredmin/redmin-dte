@@ -141,15 +141,20 @@ else
   log "yellow" "BUILDING IMAGE"
   DOCKER_BUILDKIT=1 docker build -t ${APP_NAME}:"$TAG" -t ${APP_NAME}:latest .
 fi
-sendNotification "IMAGE Build" "Image ${APP_NAME}:$TAG builded"
+sendNotification "Image ${APP_NAME}:$TAG builded"
 
 # use docker-slim to compress the image
 log "yellow" "COMPRESSING IMAGE"
 slim --report nginx-build-report.json build --target ${APP_NAME}:$TAG --copy-meta-artifacts .
 
+log "yellow" "PUSHING IMAGE AS $TAG"
 docker tag ${APP_NAME}:"$TAG" ${REPOSITORY}${APP_NAME}:"$TAG"
 docker push ${REPOSITORY}${APP_NAME}:"$TAG"
+
+log "yellow" "PUSHING IMAGE AS LATEST"
 docker tag ${APP_NAME}:latest ${REPOSITORY}${APP_NAME}:latest
 docker push ${REPOSITORY}${APP_NAME}:latest
-echo "docker push ${REPOSITORY}${APP_NAME}:$TAG"
-sendNotification "IMAGE Pushed" "Image ${APP_NAME}:$TAG pushed"
+
+sendNotification "Image ${APP_NAME}:$TAG pushed"
+
+log "green" "BUILD FINISHED"
