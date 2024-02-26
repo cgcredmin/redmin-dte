@@ -1,9 +1,9 @@
 FROM composer:latest AS composer_dependencies
 
 # SCRIPTS
-COPY --chmod=777 /scripts/. /app/scripts
+COPY --chmod=777 ./scripts/. /app/scripts
 # APP
-COPY --chmod=777 /src/. /app
+COPY --chmod=777 ./src/ /app/
 
 WORKDIR /app
 
@@ -13,7 +13,10 @@ RUN composer install --no-interaction --ignore-platform-reqs
 FROM php:8.2-fpm-buster as app
 
 # copy from composer_dependencies
-COPY --from=composer_dependencies /app /var/www/html
+COPY --from=composer_dependencies /app/ /var/www/html/
+
+# Set the working directory to /app
+WORKDIR /var/www/html
 
 # Copy the script from your host machine to the Docker image
 COPY config/dependency_installer.sh /dependency_installer.sh
@@ -40,14 +43,11 @@ COPY config/cron.d /etc/cron.d/
 RUN chmod 0644 /etc/cron.d/*
 
 # Config NGINX
-COPY --chmod=777 /config/nginx/nginx.conf /etc/nginx/conf.d/nginx.conf
+COPY --chmod=777 /config/nginx/nginx.conf /etc/nginx/nginx.conf
 RUN mkdir -p /run/nginx/
 RUN touch /run/nginx/nginx.pid
 RUN ln -sf /dev/stdout /var/log/nginx/access.log
 RUN ln -sf /dev/stderr /var/log/nginx/error.log
-
-# Set the working directory to /app
-WORKDIR /var/www/html
 
 EXPOSE 80
 

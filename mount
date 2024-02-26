@@ -6,6 +6,7 @@ NGINX_PATH="/var/www/html/${CONTAINER}"
 CONTAINER_PATH="/var/www/html"
 DOCKER_IMAGE="public.ecr.aws/z5x9j2p1/redmindte"
 NETWORK="database_default"
+# NETWORK="dockerdb_default"
 STORAGE_DIR="$PWD/app_storage"
 DB_BACKUPS_DIR="$PWD/db_backups"
 
@@ -65,13 +66,12 @@ done
 
   docker run -d -p $PORT:80 \
     --env-file=./config.env \
-    -v "$NGINX_PATH":"$CONTAINER_PATH" \
     -v "$STORAGE_DIR":/var/www/html/storage \
     -v "$DB_BACKUPS_DIR":/var/www/html/database/backups \
     --network=$NETWORK \
     --name $CONTAINER "$DOCKER_IMAGE:$VERSION"
 
-  docker exec -it $CONTAINER /bin/sh -c "python init.py"
+  docker exec -it $CONTAINER /bin/sh -c "python /var/www/html/init.py"
 
   # Remove unused images
   docker system prune -f

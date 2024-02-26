@@ -6,7 +6,7 @@ config/CAF/*.*
 config/CERTS/*.*
 config/database/**/*.sql
 config/env_params
-src/.env
+**/.env
 src/rcv
 **/node_modules
 src/.idea
