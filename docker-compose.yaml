@@ -22,6 +22,8 @@ services:
     container_name: redmindte
     restart: unless-stopped
     tty: true
+    environment: 
+      build: "dev"
     expose: 
       - "9000"
     env_file:

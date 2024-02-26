@@ -128,25 +128,28 @@ log "green" "AWS LOGIN"
 # aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REPOSITORY}
 aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/z5x9j2p1
 
-tag=$(date +"%y.%m.%d")
+# get the current date and hour
+TAG=$(date +"%y.%m.%d%H")
 
-log "green" "TAG: $tag"
-log "yellow" "PUSH TO AWS ${APP_NAME}:$tag"
+log "green" "TAG: $TAG"
+log "yellow" "PUSH TO AWS ${APP_NAME}:$TAG"
 
 if [[ $(uname -m) == "arm64" ]]; then
   log "yellow" "BUILDING IMAGE WITH BUILDX"
-  docker buildx build --platform=linux/amd64 --load -t ${APP_NAME}:"$tag" -t ${APP_NAME}:latest .
+  docker buildx build --platform=linux/amd64 --load -t ${APP_NAME}:"$TAG" -t ${APP_NAME}:latest .
 else
   log "yellow" "BUILDING IMAGE"
-  DOCKER_BUILDKIT=1 docker build -t ${APP_NAME}:"$tag" -t ${APP_NAME}:latest .
+  DOCKER_BUILDKIT=1 docker build -t ${APP_NAME}:"$TAG" -t ${APP_NAME}:latest .
 fi
-sendNotification "IMAGE Build" "Image ${APP_NAME}:$tag builded"
+sendNotification "IMAGE Build" "Image ${APP_NAME}:$TAG builded"
 
 # use docker-slim to compress the image
 log "yellow" "COMPRESSING IMAGE"
-slim --report nginx-build-report.json build --target ${APP_NAME}:$tag --copy-meta-artifacts .
+slim --report nginx-build-report.json build --target ${APP_NAME}:$TAG --copy-meta-artifacts .
 
-docker tag ${APP_NAME}:"$tag" ${REPOSITORY}${APP_NAME}:"$tag"
-docker push ${REPOSITORY}${APP_NAME}:"$tag"
-echo "docker push ${REPOSITORY}${APP_NAME}:$tag"
-sendNotification "IMAGE Pushed" "Image ${APP_NAME}:$tag pushed"
+docker tag ${APP_NAME}:"$TAG" ${REPOSITORY}${APP_NAME}:"$TAG"
+docker push ${REPOSITORY}${APP_NAME}:"$TAG"
+docker tag ${APP_NAME}:latest ${REPOSITORY}${APP_NAME}:latest
+docker push ${REPOSITORY}${APP_NAME}:latest
+echo "docker push ${REPOSITORY}${APP_NAME}:$TAG"
+sendNotification "IMAGE Pushed" "Image ${APP_NAME}:$TAG pushed"

@@ -29,7 +29,6 @@ COPY --chmod=777 /config/php/php8/php-fpm.conf /etc/php8/php-fpm.conf
 COPY --chmod=777 /config/php/php8/www.conf /etc/php8/php-fpm.d/www.conf
 COPY --chmod=777 /config/php/php8/php.ini /etc/php8/php.ini
 
-
 # Configure supervisor
 RUN mkdir -p /etc/supervisor.d/
 COPY --chmod=777 /config/supervisord.ini /etc/supervisor.d/supervisord.ini
@@ -40,9 +39,16 @@ RUN chmod +x /var/www/html/scheduled && bash /var/www/html/scheduled
 COPY config/cron.d /etc/cron.d/
 RUN chmod 0644 /etc/cron.d/*
 
+# Config NGINX
+COPY --chmod=777 /config/nginx/nginx.conf /etc/nginx/conf.d/nginx.conf
+RUN mkdir -p /run/nginx/
+RUN touch /run/nginx/nginx.pid
+RUN ln -sf /dev/stdout /var/log/nginx/access.log
+RUN ln -sf /dev/stderr /var/log/nginx/error.log
+
 # Set the working directory to /app
 WORKDIR /var/www/html
 
-EXPOSE 9000
+EXPOSE 80
 
 ENTRYPOINT ["supervisord", "-c", "/etc/supervisor.d/supervisord.ini"]

@@ -12,6 +12,14 @@ apt-get install -y curl
 apt-get install -y bash
 apt-get install -y npm
 apt-get install -y python3-pip
+apt-get install -y supervisor
+apt-get install -y cron
+
+# Install rich package for python
+pip3 install rich
+
+# Install nginx
+apt-get install -y nginx
 
 # Install the PHP pdo_mysql library
 docker-php-ext-install pdo pdo_mysql && docker-php-ext-enable pdo pdo_mysql

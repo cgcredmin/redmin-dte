@@ -1,0 +1,89 @@
+#!/bin/bash
+VERSION="${1:-latest}"
+PORT=8001
+CONTAINER="redmindte"
+NGINX_PATH="/var/www/html/${CONTAINER}"
+CONTAINER_PATH="/var/www/html"
+DOCKER_IMAGE="public.ecr.aws/z5x9j2p1/redmindte"
+NETWORK="database_default"
+STORAGE_DIR="$PWD/app_storage"
+DB_BACKUPS_DIR="$PWD/db_backups"
+
+
+directories=(
+    "$PWD/db_backups"
+    "$PWD/app_storage"
+    "$PWD/app_storage/app"
+    "$PWD/app_storage/app/public"
+    "$PWD/app_storage/framework"
+    "$PWD/app_storage/framework/cache"
+    "$PWD/app_storage/framework/cache/data"
+    "$PWD/app_storage/framework/sessions"
+    "$PWD/app_storage/framework/testing"
+    "$PWD/app_storage/framework/views"
+    "$PWD/app_storage/logs"
+)
+
+for dir in "${directories[@]}"; do
+    if [[ ! -d "$dir" ]]; then
+        mkdir -p "$dir"
+    fi
+done
+
+log() {
+    if [[ $1 == 'red' ]]; then color="\033[1;31m"; fi
+    if [[ $1 == 'green' ]]; then color="\033[1;32m"; fi
+    if [[ $1 == 'yellow' ]]; then color="\033[1;33m"; fi
+    if [[ $1 == 'blue' ]]; then color="\033[1;34m"; fi
+    echo -e "${color} ::::::::  $2 :::::::: \033[0m"
+}
+
+# Check if PORT is in use, if it is, increment it by 1 until it's not
+while [[ $(lsof -i :$PORT) ]]; do
+    PORT=$((PORT+1))
+done
+
+{
+  log "blue" "-----------------------------------------------"
+  log "blue" "----  INICIO DE ACTUALIZACIÓN DE SERVIDOR  ----"
+  log "blue" "-----------------------------------------------"
+
+  log "green" "TAG: $VERSION"
+
+  log "yellow" "--- PULLING IMAGE FROM AWS ECR ---"
+  docker pull "$DOCKER_IMAGE:$VERSION"
+
+  # Stop and remove the container if it exists
+  if [[ $(docker ps -a -q -f name=$CONTAINER) ]]; then
+      log "yellow" "--- STOPPING CONTAINER ---"
+      docker stop $CONTAINER
+      log "yellow" "--- REMOVING CONTAINER ---"
+      docker rm $CONTAINER
+  fi
+
+  log "green" "--- RUNNING $CONTAINER CONTAINER ---"
+
+  docker run -d -p $PORT:80 \
+    --env-file=./config.env \
+    -v "$NGINX_PATH":"$CONTAINER_PATH" \
+    -v "$STORAGE_DIR":/var/www/html/storage \
+    -v "$DB_BACKUPS_DIR":/var/www/html/database/backups \
+    --network=$NETWORK \
+    --name $CONTAINER "$DOCKER_IMAGE:$VERSION"
+
+  docker exec -it $CONTAINER /bin/sh -c "python init.py"
+
+  # Remove unused images
+  docker system prune -f
+
+  log "green" "--- SUCCESSFUL DEPLOYMENT ---"
+  docker ps
+} || {
+  log "red" "-----------------------------------------------"
+  log "red" "-------------- DEPLOYMENT FAILED --------------"
+  log "red" "-----------------------------------------------"
+}
+
+log "blue" "-----------------------------------------------"
+log "blue" "------  FIN DE ACTUALIZACIÓN DE SERVIDOR  -----"
+log "blue" "-----------------------------------------------"
