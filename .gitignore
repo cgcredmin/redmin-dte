@@ -15,7 +15,7 @@ src/cron.log
 src/supervisord.log
 src/supervisord.pid
 src/mycrontask
-src/vendor
+**/vendor
 /web-scrapper
 .docker
 src/scrapper/RegistroCompraVentaScrapper

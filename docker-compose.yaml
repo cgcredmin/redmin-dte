@@ -10,8 +10,8 @@ services:
     tty: true
     environment: 
       build: "dev"
-    expose: 
-      - "80"
+    ports: 
+      - "80:80"
     env_file:
       - ./config/env_params
     volumes:

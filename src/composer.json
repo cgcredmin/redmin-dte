@@ -19,7 +19,7 @@
     "league/flysystem": "^3.11",
     "league/flysystem-aws-s3-v3": "^3.12",
     "milon/barcode": "^9.0",
-    "sasco/libredte": "^21.10.5",
+    "sasco/libredte": "^24.1",
     "tymon/jwt-auth": "*",
     "webklex/laravel-imap": "^4.1"
   },
@@ -52,7 +52,10 @@
   "config": {
     "optimize-autoloader": true,
     "preferred-install": "dist",
-    "sort-packages": true
+    "sort-packages": true,
+    "platform": {
+      "php": "7.4"
+    }
   },
   "minimum-stability": "dev",
   "prefer-stable": true

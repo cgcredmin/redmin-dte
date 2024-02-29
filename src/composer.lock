@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "182cb7655ccd97ae463e21a95e0fa864",
+    "content-hash": "8e3a1885bf56f201bcd847bc9aeab4c3",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3952,23 +3952,23 @@
         },
         {
             "name": "sasco/libredte",
-            "version": "21.10.5",
+            "version": "24.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/LibreDTE/libredte-lib.git",
-                "reference": "9054a4a8e2943ff04fd67537093cb5de659379b4"
+                "reference": "935484b7022e19fcfd72e50294738926c2e8bbb8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/LibreDTE/libredte-lib/zipball/9054a4a8e2943ff04fd67537093cb5de659379b4",
-                "reference": "9054a4a8e2943ff04fd67537093cb5de659379b4",
+                "url": "https://api.github.com/repos/LibreDTE/libredte-lib/zipball/935484b7022e19fcfd72e50294738926c2e8bbb8",
+                "reference": "935484b7022e19fcfd72e50294738926c2e8bbb8",
                 "shasum": ""
             },
             "require": {
                 "ext-curl": "*",
                 "ext-openssl": "*",
                 "ext-soap": "*",
-                "php": ">=7.3",
+                "php": "7.3.* || 7.4.*",
                 "phpseclib/phpseclib": "2.0.31",
                 "tecnickcom/tcpdf": "6.4.1"
             },
@@ -4003,7 +4003,7 @@
                 "issues": "https://github.com/LibreDTE/libredte-lib/issues",
                 "source": "https://github.com/LibreDTE/libredte-lib"
             },
-            "time": "2022-07-16T14:53:14+00:00"
+            "time": "2024-01-27T18:48:20+00:00"
         },
         {
             "name": "symfony/console",
@@ -8981,5 +8981,8 @@
         "php": "^8.0"
     },
     "platform-dev": [],
+    "platform-overrides": {
+        "php": "7.4"
+    },
     "plugin-api-version": "2.6.0"
 }

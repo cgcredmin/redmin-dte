@@ -14,6 +14,23 @@ RUN /dependency_installer.sh
 # Set the working directory to /app
 WORKDIR /var/www/html
 
+# Configure supervisor
+RUN mkdir -p /etc/supervisor.d/
+COPY --chmod=777 /config/supervisord.ini /etc/supervisor.d/supervisord.ini
+
+# Config cron
+COPY config/cron.d/scheduled /var/www/html/scheduled
+RUN chmod +x /var/www/html/scheduled && bash /var/www/html/scheduled
+COPY config/cron.d /etc/cron.d/
+RUN chmod 0644 /etc/cron.d/*
+
+# Config NGINX
+COPY --chmod=777 /config/nginx/nginx.conf /etc/nginx/nginx.conf
+RUN mkdir -p /run/nginx/
+RUN touch /run/nginx/nginx.pid
+RUN ln -sf /dev/stdout /var/log/nginx/access.log
+RUN ln -sf /dev/stderr /var/log/nginx/error.log
+
 #PHP
 COPY --chmod=777 config/php/php8/php-fpm.conf /etc/php8/php-fpm.conf
 COPY --chmod=777 config/php/php8/www.conf /etc/php8/php-fpm.d/www.conf
@@ -22,6 +39,6 @@ COPY --chmod=777 config/php/php8/php.ini /etc/php8/php.ini
 # Installing composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
-EXPOSE 9000
+EXPOSE 80
 
-CMD ["php-fpm"]
+ENTRYPOINT ["supervisord", "-c", "/etc/supervisor.d/supervisord.ini"]
