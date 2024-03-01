@@ -121,15 +121,11 @@ class BoletaController extends Controller
 
     if ($EnvioDTE->schemaValidate()) {
       $xml = (string) $EnvioDTE->generar();
-      // dd($xml);
       $result = $this->sendTicket($xml);
-      // dd(['enviaDocumento::result' => $result]);
 
-      // $track_id = $EnvioDTE->enviar();
       $track_id = $result['trackid'];
       $doc = $EnvioDTE->getDocumentos()[0];
       $ted = $doc ? $doc->getTED() : '';
-      // return $ted;
 
       //Generar Timbre en PNG
       $code = new DNS2D();
@@ -143,21 +139,6 @@ class BoletaController extends Controller
       $xmlstring = Storage::get($filename);
 
       $stringXml = $track_id !== false ? base64_encode($xmlstring) : '';
-      // dd([
-      //   'trackId' => $track_id,
-      //   'xml' => $stringXml,
-      //   'timbre' => $timbre,
-      //   'filename' => $filename,
-      // ]);
-
-      dispatch(
-        new \App\Jobs\SendDTE(
-          'cj.guajardo@gmail.com',
-          $request->input('Encabezado.IdDoc.Folio'),
-          $tipo_dte,
-          $filename,
-        ),
-      );
 
       return response()->json(
         [

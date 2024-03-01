@@ -18,10 +18,12 @@ use App\Models\Tempfiles;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 
-use App\Models\Contribuyentes;
+use App\Http\Traits\MakePDFTrait;
 
 class DteController extends Controller
 {
+    use MakePDFTrait;
+
     public function comprobarDocumento(Request $request)
     {
         $rules = [
@@ -189,41 +191,6 @@ class DteController extends Controller
                     return response()->json($result, 400);
                 }
 
-                /* $rcv = RegistroCompraVenta::where([
-          ['detTipoDoc', '=', $request->tipoDoc],
-          ['detNroDoc', '=', $request->folioDoc],
-          ['detFchDoc', '=', $request->fechaEmision],
-          ['detMntNeto', '=', $request->montoTotal],
-          ['detRutDoc', '=', $rutEmisor],
-        ])->first();
-
-        if ($rcv) {
-          $comprobacion = ComprobacionSii::where(
-            'registro_compra_venta_id',
-            '=',
-            $rcv->id,
-          )->first();
-          if ($comprobacion) {
-            $comprobacion->estado = $result->ESTADO;
-            $comprobacion->glosa_estado = $result->GLOSA_ESTADO;
-            $comprobacion->error = $result->ERR_CODE;
-            $comprobacion->glosa_error = $result->GLOSA_ERR;
-            $comprobacion->fecha_consulta = date('Y-m-d H:i:s');
-            $comprobacion->xml = $xml->saveXML();
-            $comprobacion->save();
-          } else {
-            $comprobacion = new ComprobacionSii();
-            $comprobacion->registro_compra_venta_id = $rcv->id;
-            $comprobacion->estado = $result->ESTADO;
-            $comprobacion->glosa_estado = $result->GLOSA_ESTADO;
-            $comprobacion->error = $result->ERR_CODE;
-            $comprobacion->glosa_error = $result->GLOSA_ERR;
-            $comprobacion->fecha_consulta = date('Y-m-d H:i:s');
-            // $comprobacion->xml = $xml->saveXML();
-            $comprobacion->save();
-          }
-        } */
-
                 return response()->json($result, 200);
             }
 
@@ -337,72 +304,64 @@ class DteController extends Controller
                 ? $code->getBarcodePNG($ted, 'PDF417')
                 : '';
 
-            $filenameXml = 'xml/dte/' . $DTE->getID() . ' - TI' . $track_id . '.xml';
-            Storage::put($filenameXml, $xml);
-            $xmlstring = Storage::get($filenameXml);
+            $filenameXml = $this->rutas->dte. $DTE->getID() . ' - TI' . $track_id . '.xml';
+            file_put_contents($filenameXml, $xml);
+            $xmlstring = file_get_contents($filenameXml);
 
-            $filenamePdf = $this->makePDF($doc, $caratula, $request->input('Encabezado.IdDoc.Folio'));
-            $pdfstring = Storage::get($filenamePdf);
+            $filenamePdf = $this->make_pdf($xmlstring);
+            $pdfstring = file_get_contents($filenamePdf);
 
             $stringXml = $track_id !== false ? base64_encode($xmlstring) : '';
             $stringPdf = $track_id !== false ? base64_encode($pdfstring) : '';
 
-            // should check the document status before sending the email
-            // $rules = [
-            //   'rutEmisor' => 'required|string',
-            //   // 'rutReceptor'=>'required|string',
-            //   'tipoDoc' => 'required|numeric',
-            //   'folioDoc' => 'required|numeric',
-            //   'fechaEmision' => 'required|date',
-            //   'montoTotal' => 'required|numeric',
-            // ];
-            $error_status_check = null;
-            $statusCheck = null;
-            try {
-                // $datos = $doc->datos();
-                $total = collect($factura['Detalle'])->map(function ($item) {
-                    return floatval($item['PrcItem']) * floatval($item['QtyItem']);
-                })->sum();
-                $request = new Request([
-                    'rutEmisor' => $request->input('Encabezado.Emisor.RUTEmisor'),
-                    'tipoDoc' => $request->input('Encabezado.IdDoc.TipoDTE'),
-                    'folioDoc' => $request->input('Encabezado.IdDoc.Folio'),
-                    'fechaEmision' => $request->input('Encabezado.IdDoc.FchEmis') ?? date('Y-m-d'),
-                    'montoTotal' => $total,
-                ]);
-                $statusCheck = $this->comprobarDocumento($request);
-                // parse response as object
-                $statusCheck = json_decode($statusCheck->getContent());
-                if ($statusCheck->ESTADO === 'DNK' || $statusCheck->ESTADO === 'DOK') {
-                    // get the email from the request, if not present search in the database
-                    if ($this->ambiente === 'produccion') {
-                        $email = Contribuyentes::where('rut', $request->input('Encabezado.Receptor.RUTRecep'))->first()->email ?? '';
-
-                        if ($email === '') {
-                            $email = $request->input('Encabezado.Receptor.CorreoRecep') ?? '';
-                        }
-
-                        if ($email === '') {
-                            $email = 'ssalamanca@empresasieg.com';
-                        }
-                    } else {
-                        $email = 'cguajardo@redmin.cl';
-                    }
-                    if ($email) {
-                        dispatch(
-                            new \App\Jobs\SendDTE(
-                                $email,
-                                $request->input('Encabezado.IdDoc.Folio'),
-                                $tipo_dte,
-                                $filenameXml,
-                                $filenamePdf,
-                            ),
-                        );
-                    }
-                }
-            } catch (\Exception $e) {
-                $error_status_check = $e->getMessage();
-            }
+            //
+            // $error_status_check = null;
+            // $statusCheck = null;
+            // try {
+            //     // $datos = $doc->datos();
+            //     $total = collect($factura['Detalle'])->map(function ($item) {
+            //         return floatval($item['PrcItem']) * floatval($item['QtyItem']);
+            //     })->sum();
+            //     $request = new Request([
+            //         'rutEmisor' => $request->input('Encabezado.Emisor.RUTEmisor'),
+            //         'tipoDoc' => $request->input('Encabezado.IdDoc.TipoDTE'),
+            //         'folioDoc' => $request->input('Encabezado.IdDoc.Folio'),
+            //         'fechaEmision' => $request->input('Encabezado.IdDoc.FchEmis') ?? date('Y-m-d'),
+            //         'montoTotal' => $total,
+            //     ]);
+            //     $statusCheck = $this->comprobarDocumento($request);
+            //     // parse response as object
+            //     $statusCheck = json_decode($statusCheck->getContent());
+            //     if ($statusCheck->ESTADO === 'DNK' || $statusCheck->ESTADO === 'DOK') {
+            //         // get the email from the request, if not present search in the database
+            //         if ($this->ambiente === 'produccion') {
+            //             $email = Contribuyentes::where('rut', $request->input('Encabezado.Receptor.RUTRecep'))->first()->email ?? '';
+            //
+            //             if ($email === '') {
+            //                 $email = $request->input('Encabezado.Receptor.CorreoRecep') ?? '';
+            //             }
+            //
+            //             if ($email === '') {
+            //                 $email = 'ssalamanca@empresasieg.com';
+            //             }
+            //         } else {
+            //             $email = 'cguajardo@redmin.cl';
+            //         }
+            //         if ($email) {
+            //             dispatch(
+            //                 new \App\Jobs\SendDTE(
+            //                     $email,
+            //                     $request->input('Encabezado.IdDoc.Folio'),
+            //                     $tipo_dte,
+            //                     $filenameXml,
+            //                     $filenamePdf,
+            //                 ),
+            //             );
+            //         }
+            //     }
+            // } catch (\Exception $e) {
+            //     $error_status_check = $e->getMessage();
+            // }
 
             return response()->json(
                 [
@@ -410,7 +369,7 @@ class DteController extends Controller
                     'xml' => $stringXml,
                     'pdf' => $stringPdf,
                     'timbre' => "$timbre",
-                    'statusCheck' => $statusCheck ?? $error_status_check,
+                    // 'statusCheck' => $statusCheck ?? $error_status_check,
                 ],
                 200,
             );
@@ -517,31 +476,4 @@ class DteController extends Controller
         return response()->json(['error' => 'No se encontró el documento'], 400);
     }
 
-    private function makePDF($dte, $caratula, $folio)
-    {
-        $fecha_doc = $caratula['TmstFirmaEnv'] ?? date('Y-m-d H:i:s');
-        $fecha = str_replace(['-', ':', 'T'], '', $fecha_doc);
-        $hash = md5($caratula['RutEnvia'] . '_' . $fecha . '_' . $folio);
-        $dir = $this->rutas->pdf . 'dte_' . $hash;
-
-        if (is_dir($dir)) {
-            \sasco\LibreDTE\File::rmdir($dir);
-        }
-        if (!mkdir($dir)) {
-            die('No fue posible crear directorio temporal para DTEs');
-        }
-
-        // =false hoja carta, =true papel contínuo (false por defecto si no se pasa)
-        $pdf = new \sasco\LibreDTE\Sii\Dte\PDF\Dte(false);
-        $pdf->setFooterText('redminDTE');
-        $pdf->setLogo('/var/www/html/public/dist/images/logo-sin-fondo.png'); // debe ser PNG!
-        $pdf->setResolucion(['FchResol' => $caratula['FchResol'], 'NroResol' => $caratula['NroResol']]);
-        $pdf->setCedible(false);
-        $pdf->agregar($dte->getDatos(), $dte->getTED());
-
-        $fullPath = $dir . '/dte_' . $caratula['RutEnvia'] . '_' . $dte->getID() . '.pdf';
-        $pdf->Output($fullPath, 'F');
-
-        return $fullPath;
-    }
 }
