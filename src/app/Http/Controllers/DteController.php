@@ -116,7 +116,10 @@ class DteController extends Controller
                         // $comprobacion->xml = $xml->saveXML();
                     }
                     $comprobacion->save();
+
                 }
+
+                $result['timestamp'] = date('Y-m-d H:i:s');
 
                 return response()->json($result, 200);
             }
@@ -366,6 +369,7 @@ class DteController extends Controller
             return response()->json(
                 [
                     'trackId' => $track_id,
+                    "timestamp" => date('Y-m-d H:i:s'),
                     'xml' => $stringXml,
                     'pdf' => $stringPdf,
                     'timbre' => "$timbre",
