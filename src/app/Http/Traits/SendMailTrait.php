@@ -1,16 +1,20 @@
-<?php namespace App\Http\Traits;
+<?php
+
+namespace App\Http\Traits;
 
 use App\Models\Log;
 
-trait SendMailTrait{
-    protected $apiKeyPublic = env('MAILJET_APIKEY');
-    protected $apiKeyPrivate = env('MAILJET_APISECRET');
-    protected $url = 'https://api.mailjet.com/v3.1/send';
-    protected $template_id = env('MAILJET_TEMPLATEID');
-
-    public function send_mj(string $content, string $email, array $attachments=[])
+trait SendMailTrait
+{
+    public function send_mj(string $content, string $email, array $attachments = [])
     {
-        $fallbackEmail = env('FALLBACK_EMAIL','');
+        $apiKeyPublic = env('MAILJET_APIKEY');
+        $apiKeyPrivate = env('MAILJET_APISECRET');
+        $url = 'https://api.mailjet.com/v3.1/send';
+        $template_id = (int)env('MAILJET_TEMPLATEID');
+        $fallbackEmail = env('FALLBACK_EMAIL', '');
+
+        // dd($apiKeyPublic, $apiKeyPrivate, $url, $template_id, $fallbackEmail, $email, $attachments, $content);
 
         $data_string = json_encode([
             "Messages" => [
@@ -31,7 +35,7 @@ trait SendMailTrait{
                             "Name" => $fallbackEmail
                         ],
                     ],
-                    "TemplateID" => $this->template_id,
+                    "TemplateID" => $template_id,
                     "TemplateLanguage" => true,
                     "Subject" => "Envío de Documento Trinutario Electrónico",
                     "Variables" => [
@@ -44,7 +48,7 @@ trait SendMailTrait{
         ]);
         $curl = curl_init();
         curl_setopt_array($curl, array(
-            CURLOPT_URL => $this->url,
+            CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
@@ -53,10 +57,10 @@ trait SendMailTrait{
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_POSTFIELDS => $data_string,
-            CURLOPT_USERPWD => $this->apiKeyPublic . ':' . $this->apiKeyPrivate,
+            CURLOPT_USERPWD => $apiKeyPublic . ':' . $apiKeyPrivate,
             CURLOPT_HTTPHEADER => array(
                 'Content-Type: application/json',
-                'Authorization: Basic ' . base64_encode($this->apiKeyPublic . ':' . $this->apiKeyPrivate)
+                'Authorization: Basic ' . base64_encode($apiKeyPublic . ':' . $apiKeyPrivate)
             ),
         ));
 
@@ -70,8 +74,7 @@ trait SendMailTrait{
 
         curl_close($curl);
 
-        $encoded =['data' => json_decode($response), 'code' => intval($http_code)];
+        $encoded = ['data' => json_decode($response), 'code' => intval($http_code)];
         return $encoded;
     }
-
 }
