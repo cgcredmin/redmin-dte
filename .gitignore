@@ -25,3 +25,4 @@ nginx-build-report.json
 **/Dockerfile
 **/*.env
 **/.phpunit.result.cache
+**/..bfg-report
