@@ -22,4 +22,6 @@ src/scrapper/RegistroCompraVentaScrapper
 **/.local-chromium
 **/.csv
 nginx-build-report.json
-Dockerfile copy
+**/Dockerfile
+**/*.env
+**/.phpunit.result.cache
