@@ -19,7 +19,7 @@ for folder in folders:
         print(":white_check_mark:",
               "\t - [green]" + folder + " CREATED.[/green]")
     os.chmod(folder, 0o777)
-    os.chown(folder, "1000", "1000")
+    os.chown(folder, 1000, 1000)
 
 # read environment variables
 DB_CONNECTION = os.getenv('DB_CONNECTION')
