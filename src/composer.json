@@ -16,15 +16,15 @@
     "guzzlehttp/guzzle": "7.5",
     "laravel/lumen-framework": "v9.1.6",
     "league/flysystem": "3.11",
-    "league/flysystem-aws-s3-v3": "3.12",
+    "league/flysystem-aws-s3-v3": "3.12.2",
     "milon/barcode": "9.0",
-    "sasco/libredte": "24.1",
+    "sasco/libredte": "24.1.0",
     "tymon/jwt-auth": "*",
-    "webklex/laravel-imap": "4.1"
+    "webklex/laravel-imap": "4.1.2"
   },
   "require-dev": {
     "flipbox/lumen-generator": "9.1",
-    "fakerphp/faker": "1.9.1",
+    "fakerphp/faker": "1.23.1",
     "mockery/mockery": "1.4.4",
     "phpunit/phpunit": "9.5.10"
   },

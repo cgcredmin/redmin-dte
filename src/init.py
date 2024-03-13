@@ -43,7 +43,7 @@ os.chmod(base_path, 0o777)
 
 # #run composer install
 print(":rocket:", ">> [blue]Running composer install...[/blue]")
-os.execl("/usr/local/bin/composer", "composer", "install")
+os.execl("/usr/local/bin/composer", "composer", "install", "--ignore-platform-reqs")
 
 # execute db.py
 # os.system('python3 db.py')
