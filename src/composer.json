@@ -12,22 +12,21 @@
   "license": "AGPL",
   "type": "project",
   "require": {
-    "php": "^8.0",
-    "barryvdh/laravel-dompdf": "^2.0",
-    "guzzlehttp/guzzle": "^7.5",
-    "laravel/lumen-framework": "^v9.1.6",
-    "league/flysystem": "^3.11",
-    "league/flysystem-aws-s3-v3": "^3.12",
-    "milon/barcode": "^9.0",
-    "sasco/libredte": "^24.1",
+    "barryvdh/laravel-dompdf": "2.0",
+    "guzzlehttp/guzzle": "7.5",
+    "laravel/lumen-framework": "v9.1.6",
+    "league/flysystem": "3.11",
+    "league/flysystem-aws-s3-v3": "3.12",
+    "milon/barcode": "9.0",
+    "sasco/libredte": "24.1",
     "tymon/jwt-auth": "*",
-    "webklex/laravel-imap": "^4.1"
+    "webklex/laravel-imap": "4.1"
   },
   "require-dev": {
-    "flipbox/lumen-generator": "^9.1",
-    "fakerphp/faker": "^1.9.1",
-    "mockery/mockery": "^1.4.4",
-    "phpunit/phpunit": "^9.5.10"
+    "flipbox/lumen-generator": "9.1",
+    "fakerphp/faker": "1.9.1",
+    "mockery/mockery": "1.4.4",
+    "phpunit/phpunit": "9.5.10"
   },
   "autoload": {
     "psr-4": {
