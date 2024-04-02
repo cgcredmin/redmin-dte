@@ -2,7 +2,7 @@ name: PHP Composer
 
 on:
   push:
-    branches: [ "production" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "production" ]
 
@@ -16,6 +16,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Set src/
+      run: cd src
 
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
