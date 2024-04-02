@@ -9,7 +9,7 @@
     "redmin",
     "dte"
   ],
-  "license": "AGPL",
+  "license": "proprietary",
   "type": "project",
   "require": {
     "barryvdh/laravel-dompdf": "2.0",
