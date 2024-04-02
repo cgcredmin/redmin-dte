@@ -5,21 +5,21 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-  /**
-   * Run the migrations.
-   *
-   * @return void
-   */
-  public function up()
-  {
-    DB::statement($this->dropSP());
-    DB::statement($this->createSP());
-  }
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        DB::statement($this->dropSP());
+        DB::statement($this->createSP());
+    }
 
-  private function createSp()
-  {
-    return <<<SQL
-            CREATE PROCEDURE `redmin_dte`.`processTaxpayersData` (IN `p_limit` int)
+    private function createSp()
+    {
+        return <<<SQL
+            CREATE PROCEDURE `processTaxpayersData` (IN `p_limit` int)
             BEGIN
 
                 #Cursor variables
@@ -29,7 +29,7 @@ return new class extends Migration
                 DECLARE c_fecha_resolucion varchar(20);
                 DECLARE c_correo 		   varchar(100);
 
-                #Otras variables 
+                #Otras variables
                 DECLARE rut_numeros		   int;
                 DECLARE digito_verificador varchar(1);
                 DECLARE contador           int DEFAULT 0;
@@ -51,7 +51,7 @@ return new class extends Migration
                             , BC.field_2 AS RAZON_SOCIAL
                             , BC.field_3 AS NRO_RESOLUCION
                             , BC.field_4 AS FECHA_RESOLUCION
-                            , BC.field_5 AS CORREO 
+                            , BC.field_5 AS CORREO
                         FROM bulkCopyTable AS BC
                         WHERE field_1 REGEXP '^[0-9]{6,8}-[0-9kK]$'
                         AND BC.field_3 IS NOT NULL
@@ -62,7 +62,7 @@ return new class extends Migration
                     OPEN taxpayersCursor;
                         BEGIN
                             DECLARE fin_l bool default FALSE;
-                            DECLARE continue HANDLER FOR NOT FOUND SET fin_l = TRUE; 
+                            DECLARE continue HANDLER FOR NOT FOUND SET fin_l = TRUE;
 
                             loop_taxprayers: LOOP
                                 FETCH taxpayersCursor INTO c_rut, c_razon_social, c_nro_resolucion, c_fecha_resolucion, c_correo;
@@ -110,19 +110,19 @@ return new class extends Migration
 
             END;
         SQL;
-  }
+    }
 
-  private function dropSP()
-  {
-    return <<<SQL
+    private function dropSP()
+    {
+        return <<<SQL
             DROP PROCEDURE IF EXISTS `processTaxpayersData`;
         SQL;
-  }
+    }
 
-  public function down()
-  {
-    return <<<SQL
+    public function down()
+    {
+        return <<<SQL
             DROP PROCEDURE IF EXISTS `processTaxpayersData`;
         SQL;
-  }
+    }
 };

@@ -26,3 +26,4 @@ nginx-build-report.json
 **/*.env
 **/.phpunit.result.cache
 **/..bfg-report
+**/*.sqlite

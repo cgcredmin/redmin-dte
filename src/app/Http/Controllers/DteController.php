@@ -133,79 +133,6 @@ class DteController extends Controller
         }
     }
 
-    public function comprobarDocumentoAv(Request $request)
-    {
-        $rules = [
-            'rutEmisor' => 'required|string',
-            // 'rutReceptor'=>'required|string',
-            'tipoDoc' => 'required|numeric',
-            'folioDoc' => 'required|numeric',
-            'fechaEmision' => 'required|date',
-            'montoTotal' => 'required|numeric',
-        ];
-
-        $this->validate($request, $rules);
-
-        //get the dv from rutEmisor
-        $dvEmisor = substr($request->input('rutEmisor'), -1);
-        $rutEmisor = substr($request->input('rutEmisor'), 0, -2);
-
-        //get rutEmpresa without dv
-        $dvEmpresa = substr($this->rutEmpresa, -1);
-        $rutEmpresa = substr($this->rutEmpresa, 0, -2);
-
-        //get rutConsultante without dv
-        $dvContultante = substr($this->rutCert, -1);
-        $rutConsultante = substr($this->rutCert, 0, -2);
-
-        // dd($this->dteconfig);
-
-        try {
-            $token = $this->token(true);
-
-            if (!$token) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'No se pudo obtener el token',
-                ]);
-            }
-
-            //convert $request->fechaEmision to format dmY
-            $fechaEmision = date('dmY', strtotime($request->fechaEmision));
-
-            $xml = Sii::request('QueryEstDteAv', 'getEstDteAv', [
-                'RutEmpresa' => $rutEmisor,
-                'DvEmpresa' => $dvEmisor,
-                'RutReceptor' => $rutEmpresa,
-                'DvReceptor' => $dvEmpresa,
-                'TipoDte' => $request->tipoDoc,
-                'FolioDte' => $request->folioDoc,
-                'FechaEmisionDte' => $fechaEmision,
-                'MontoDte' => $request->montoTotal,
-                'FirmaDte' => $this->firma, //TODO: obtener firma del xml del documento
-                'token' => $token,
-            ]);
-
-            // si el estado se pudo recuperar se muestra
-            if ($xml !== false) {
-                $result = $xml->xpath('/SII:RESPUESTA/SII:RESP_HDR')[0];
-
-                if ($result->ERR_CODE > 15 || $result->ERR_CODE < 0) {
-                    return response()->json($result, 400);
-                }
-
-                return response()->json($result, 200);
-            }
-
-            // si hubo errores se muestran
-            if (!$xml) {
-                return response()->json(\sasco\LibreDTE\Log::readAll(), 400);
-            }
-        } catch (\Exception $e) {
-            return response()->json($e->getMessage(), 400);
-        }
-    }
-
     public function enviaDocumento(Request $request)
     {
         $rules = [
@@ -317,55 +244,6 @@ class DteController extends Controller
             $stringXml = $track_id !== false ? base64_encode($xmlstring) : '';
             $stringPdf = $track_id !== false ? base64_encode($pdfstring) : '';
 
-            //
-            // $error_status_check = null;
-            // $statusCheck = null;
-            // try {
-            //     // $datos = $doc->datos();
-            //     $total = collect($factura['Detalle'])->map(function ($item) {
-            //         return floatval($item['PrcItem']) * floatval($item['QtyItem']);
-            //     })->sum();
-            //     $request = new Request([
-            //         'rutEmisor' => $request->input('Encabezado.Emisor.RUTEmisor'),
-            //         'tipoDoc' => $request->input('Encabezado.IdDoc.TipoDTE'),
-            //         'folioDoc' => $request->input('Encabezado.IdDoc.Folio'),
-            //         'fechaEmision' => $request->input('Encabezado.IdDoc.FchEmis') ?? date('Y-m-d'),
-            //         'montoTotal' => $total,
-            //     ]);
-            //     $statusCheck = $this->comprobarDocumento($request);
-            //     // parse response as object
-            //     $statusCheck = json_decode($statusCheck->getContent());
-            //     if ($statusCheck->ESTADO === 'DNK' || $statusCheck->ESTADO === 'DOK') {
-            //         // get the email from the request, if not present search in the database
-            //         if ($this->ambiente === 'produccion') {
-            //             $email = Contribuyentes::where('rut', $request->input('Encabezado.Receptor.RUTRecep'))->first()->email ?? '';
-            //
-            //             if ($email === '') {
-            //                 $email = $request->input('Encabezado.Receptor.CorreoRecep') ?? '';
-            //             }
-            //
-            //             if ($email === '') {
-            //                 $email = 'ssalamanca@empresasieg.com';
-            //             }
-            //         } else {
-            //             $email = 'cguajardo@redmin.cl';
-            //         }
-            //         if ($email) {
-            //             dispatch(
-            //                 new \App\Jobs\SendDTE(
-            //                     $email,
-            //                     $request->input('Encabezado.IdDoc.Folio'),
-            //                     $tipo_dte,
-            //                     $filenameXml,
-            //                     $filenamePdf,
-            //                 ),
-            //             );
-            //         }
-            //     }
-            // } catch (\Exception $e) {
-            //     $error_status_check = $e->getMessage();
-            // }
-
             return response()->json(
                 [
                     'trackId' => $track_id,
@@ -373,7 +251,6 @@ class DteController extends Controller
                     'xml' => $stringXml,
                     'pdf' => $stringPdf,
                     'timbre' => "$timbre",
-                    // 'statusCheck' => $statusCheck ?? $error_status_check,
                 ],
                 200,
             );
@@ -413,13 +290,11 @@ class DteController extends Controller
     public function getTempLink(Request $request)
     {
         $hash = $request->hash ?? '-1';
-        // dd($hash);
         $compo = ComprobacionSii::where('pdf', $hash)->first();
 
         if ($compo) {
             $fileName = Crypt::decryptString($compo->pdf);
             $fileName = str_replace($this->rutas->pdf, '', $fileName);
-            // dd($fileName);
 
             if (Storage::disk('pdfs')->exists($fileName) === false) {
                 return response()->json(

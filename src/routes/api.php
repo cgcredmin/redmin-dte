@@ -9,7 +9,6 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->group(['middleware' => 'auth'], function () use ($router) {
         $router->group(['prefix' => 'dte'], function () use ($router) {
             $router->post('checkDocumento', 'DteController@comprobarDocumento');
-            $router->post('checkDocumentoAv', 'DteController@comprobarDocumentoAv');
             $router->post('sendDocumento', 'DteController@enviaDocumento');
             $router->post('sendBoleta', 'BoletaController@enviaDocumento');
             $router->get('getTempLink', 'DteController@getTempLink');

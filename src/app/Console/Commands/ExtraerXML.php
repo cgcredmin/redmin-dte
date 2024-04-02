@@ -5,10 +5,8 @@ namespace App\Console\Commands;
 use App\Console\Commands\ComandoBase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Crypt;
 
 use App\Models\Compras;
-use App\Models\Contribuyentes;
 
 use Webklex\IMAP\Facades\Client;
 
@@ -149,44 +147,7 @@ class ExtraerXML extends ComandoBase
         $correo_emisor = $doc->Emisor->CorreoEmisor ?? '';
         $razon_social = $doc->Emisor->RznSoc ?? '';
         $direccion_regional = json_encode($direccionEmisor);
-        DB::select("CALL updateTaxpayersData($rutEmisor, $correo_emisor, $direccion_regional, $razon_social, $nroResolucion, $fechaResolucion)");
-
-        //update contribuyente
-        // $contribuyente = Contribuyentes::where('rut', $rutSinDv)->first();
-        // if (!$contribuyente) {
-        //   $contribuyente = Contribuyentes::create([
-        //     'rut' => $rutSinDv,
-        //     'dv' => $dv,
-        //     'correo' => (string) $doc->Emisor->CorreoEmisor ?? '',
-        //     'direccion_regional' => json_encode($direccionEmisor),
-        //     'razon_social' => (string) $doc->Emisor->RznSoc ?? '',
-        //     'nro_resolucion' => $nroResolucion,
-        //     'fecha_resolucion' => $fechaResolucion,
-        //   ]);
-        // } else {
-        //   if ($contribuyente->correo == '' || $contribuyente->correo == null) {
-        //     $contribuyente->correo = (string) $doc->Emisor->CorreoEmisor ?? '';
-        //   }
-        //   if (
-        //     $contribuyente->direccion_regional == '' ||
-        //     $contribuyente->direccion_regional == null
-        //   ) {
-        //     $contribuyente->direccion_regional = json_encode($direccionEmisor);
-        //   }
-        //   if (
-        //     $contribuyente->razon_social == null ||
-        //     $contribuyente->razon_social == ''
-        //   ) {
-        //     $contribuyente->razon_social = (string) $doc->Emisor->RznSoc ?? '';
-        //   }
-        //   if (
-        //     $contribuyente->nro_resolucion == '' ||
-        //     $contribuyente->nro_resolucion == null
-        //   ) {
-        //     $contribuyente->nro_resolucion = $nroResolucion;
-        //   }
-        //   $contribuyente->save();
-        // }
+        DB::select("CALL updateTaxpayersData('$rutEmisor', '$correo_emisor', '$direccion_regional', '$razon_social', $nroResolucion, '$fechaResolucion')");
 
         $data = [
           'rut_emisor' => $rutEmisor,
