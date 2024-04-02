@@ -17,11 +17,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set src/
-      run: cd src
-
     - name: Validate composer.json and composer.lock
-      run: composer validate --strict
+      run: cd src && composer validate --strict
 
     - name: Cache Composer packages
       id: composer-cache
@@ -33,7 +30,7 @@ jobs:
           ${{ runner.os }}-php-
 
     - name: Install dependencies
-      run: composer install --prefer-dist --no-progress
+      run: cd src && composer install --prefer-dist --no-progress
 
     - name: Configure AWS
       uses: aws-actions/configure-aws-credentials@v1
@@ -44,6 +41,7 @@ jobs:
 
     - name: Set ssh-key
       run: |
+        cd src
         ssh-keygen -t rsa -b 4096 -f ./tmp-key.pub -N ""
         chmod 400 ./tmp-key.pub
 
