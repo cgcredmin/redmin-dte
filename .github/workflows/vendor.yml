@@ -41,11 +41,11 @@ jobs:
 
     - name: Set ssh-key
       run: |
-        ssh-keygen -t rsa -b 4096 -f ~/tmp-key.pub -N ""
-        chmod 400 ~/tmp-key.pub
+        ssh-keygen -t rsa -b 4096 -f /home/runner/tmp-key.pub -N ""
+        chmod 400 /home/runner/tmp-key.pub
 
     - name: Send pub key
-      run: aws ec2-instance-connect send-ssh-public-key --region sa-east-1 --availability-zone sa-east-1a --instance-id ${{ secrets.EC2_IID }} --instance-os-user ubuntu --ssh-public-key file://~/tmp-key.pub --query "Success"
+      run: aws ec2-instance-connect send-ssh-public-key --region sa-east-1 --availability-zone sa-east-1a --instance-id ${{ secrets.EC2_IID }} --instance-os-user ubuntu --ssh-public-key file://home/runner/tmp-key.pub --query "Success"
 
     - name: Copy vendor
       run: scp -r src/vendor ubuntu@${{ secrets.EC2_DNS }}:~/test_dir
