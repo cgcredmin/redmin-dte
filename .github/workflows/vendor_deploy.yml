@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "production" ]
+    branches: [ "main" ]
 
 permissions:
   contents: read
@@ -37,7 +37,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.EC2_AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.EC2_AWS_SECRET_KEY }}
-        aws-region: sa-esat-1
+        aws-region: sa-east-1
 
     - name: Set ssh-key
       run: |
