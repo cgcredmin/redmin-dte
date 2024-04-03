@@ -12,6 +12,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Configure AWS
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.EC2_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.EC2_AWS_SECRET_KEY }}
+        aws-region: sa-east-1
+
     # - name: Cache Composer packages
     #   id: composer-cache
     #   uses: actions/cache@v3
@@ -21,18 +28,9 @@ jobs:
     #     restore-keys: |
     #       ${{ runner.os }}-php-
 
-    - name: Install dependencies
-      run: cd src && composer update --ignore-platform-reqs --no-progress
-
-    - name: Configure AWS
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.EC2_AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.EC2_AWS_SECRET_KEY }}
-        aws-region: sa-east-1
-
-    - name: Genetare ssh-key and send to EC2 Instance
+    - name: Install dependencies and copy vendor
       run: |
+        cd src && composer update --ignore-platform-reqs --no-progress
         ssh-keygen -t rsa -b 4096 -f ~/tmp-key -N ""
         chmod 400 ~/tmp-key.pub
         SUCCESS=$(aws ec2-instance-connect send-ssh-public-key --region sa-east-1 --availability-zone sa-east-1a --instance-id ${{ secrets.EC2_IID }} --instance-os-user ubuntu --ssh-public-key file://~/tmp-key.pub --query "Success")
