@@ -3,11 +3,6 @@ name: Vendor Install & Deploy
 on:
   push:
     branches: [ "main" ]
-  # pull_request:
-  #   branches: [ "main" ]
-
-# permissions:
-#   contents: read
 
 jobs:
   build:
@@ -16,9 +11,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-
-    # - name: Validate composer.json and composer.lock
-    #   run: cd src && composer validate --strict
 
     # - name: Cache Composer packages
     #   id: composer-cache
@@ -39,13 +31,11 @@ jobs:
         aws-secret-access-key: ${{ secrets.EC2_AWS_SECRET_KEY }}
         aws-region: sa-east-1
 
-    - name: Set ssh-key
+    - name: Genetare ssh-key and send to EC2 Instance
       run: |
         ssh-keygen -t rsa -b 4096 -f /home/runner/tmp-key.pub -N ""
         chmod 400 /home/runner/tmp-key.pub
-
-    - name: Send pub key
-      run: aws ec2-instance-connect send-ssh-public-key --region sa-east-1 --availability-zone sa-east-1a --instance-id ${{ secrets.EC2_IID }} --instance-os-user ubuntu --ssh-public-key file://~/tmp-key.pub --query "Success"
+        aws ec2-instance-connect send-ssh-public-key --region sa-east-1 --availability-zone sa-east-1a --instance-id ${{ secrets.EC2_IID }} --instance-os-user ubuntu --ssh-public-key file://~/tmp-key.pub --query "Success"
 
     - name: Copy vendor
       run: scp -r src/vendor ubuntu@${{ secrets.EC2_DNS }}:~/test_dir
