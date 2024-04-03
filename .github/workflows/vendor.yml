@@ -48,7 +48,7 @@ jobs:
           echo "ZIP done"
           aws s3 mv $ZIP_NAME s3://redmin-deploy/redmindte/
           echo "start remote deployer by SSH"
-          ssh -i $KEY ubuntu@${{ vars.EC2_HOST }} 'bash ~/deploy.sh'        
+          ssh -i ~/tmp-key.pub ubuntu@${{ vars.EC2_HOST }} "bash ~/deploy.sh"
         else
           echo "Failed to connect to EC2 instance"
         fi
