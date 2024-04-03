@@ -36,4 +36,4 @@ jobs:
         cat ~/tmp-key.pub
         SUCCESS=$(aws ec2-instance-connect send-ssh-public-key --region sa-east-1 --availability-zone sa-east-1a --instance-id ${{ secrets.EC2_IID }} --instance-os-user ubuntu --ssh-public-key file://~/tmp-key.pub --query "Success")
         echo "WAS SUCCESSFUL? $SUCCESS"
-        scp -i ~/tmp-key.pub -r src/vendor ubuntu@${{ secrets.EC2_DNS }}:~/test_dir
+        scp -i ~/tmp-key.pub -r src/vendor ubuntu@${{ vars.EC2_HOST }}:~/test_dir
