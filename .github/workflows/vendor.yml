@@ -41,16 +41,14 @@ jobs:
         if [ "$SUCCESS" == "true" ]; then
           echo "Connected to EC2 instance"
           DATE=$(date '+%Y.%m.%d')
-          ZIP_NAME="vendor-$DATE.zip"
+          ZIP_NAME="build-$DATE.zip"
 
           echo "ZIPPING"
           zip -9qr $ZIP_NAME src/vendor
           echo "ZIP done"
           aws s3 mv $ZIP_NAME s3://redmin-deploy/redmindte/
-          # scp -r src/vendor \
-          # ubuntu@${{ vars.EC2_HOST }}:~/test_dir
+          echo "start remote deployer by SSH"
+          ssh -i $KEY ubuntu@${{ vars.EC2_HOST }} 'bash ~/deploy.sh'        
         else
           echo "Failed to connect to EC2 instance"
         fi
-
-        scp -i ~/tmp-key.pub build-$DATE.zip ubuntu@${{ vars.EC2_HOST }}:~/test_dir/build-$DATE.zip
