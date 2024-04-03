@@ -40,9 +40,8 @@ jobs:
 
         if [ "$SUCCESS" == "true" ]; then
           echo "Connected to EC2 instance"
-          sudo ssh-copy-id -i ~/tmp-key.pub -f ubuntu@${{ vars.EC2_HOST }}
           echo "start remote deployer by SSH"
-          ssh -i ~/tmp-key.pub ubuntu@${{ vars.EC2_HOST }} "bash ~/deploy.sh"
+          ssh -o StrictHostKeyChecking=no -vvv -i ~/tmp-key.pub ubuntu@${{ vars.EC2_HOST }} "bash ~/deploy.sh"
         else
           echo "Failed to connect to EC2 instance"
         fi
