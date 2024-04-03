@@ -43,14 +43,14 @@ jobs:
 
         ssh-keygen -t rsa -b 4096 -f ~/tmp-key -N ""
         chmod 400 ~/tmp-key.pub
-        cat ~/tmp-key.pub
+        
         SUCCESS=$(aws ec2-instance-connect send-ssh-public-key --region sa-east-1 --availability-zone sa-east-1a --instance-id ${{ secrets.EC2_IID }} --instance-os-user ubuntu --ssh-public-key file://~/tmp-key.pub --query "Success")
         echo "WAS SUCCESSFUL? $SUCCESS"
 
         if [ "$SUCCESS" == "true" ]; then
           echo "Connected to EC2 instance"
           echo "start remote deployer by SSH"
-          ssh -i ~/tmp-key.pub ubuntu@${{ vars.EC2_HOST }} "bash ~/deploy.sh"
+          ssh ubuntu@${{ vars.EC2_HOST }} "bash ~/deploy.sh"
         else
           echo "Failed to connect to EC2 instance"
         fi
