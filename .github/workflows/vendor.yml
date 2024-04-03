@@ -31,22 +31,24 @@ jobs:
     - name: Install dependencies and copy vendor
       run: |
         cd src && composer update --ignore-platform-reqs --no-progress
+
+        cd .. 
+        DATE=$(date '+%Y.%m.%d')
+        ZIP_NAME="build-$DATE.zip"
+
+        echo "ZIPPING"
+        zip -9qr $ZIP_NAME src/vendor
+        echo "ZIP done"
+        aws s3 mv $ZIP_NAME s3://redmin-deploy/redmindte/
+
         ssh-keygen -t rsa -b 4096 -f ~/tmp-key -N ""
         chmod 400 ~/tmp-key.pub
         cat ~/tmp-key.pub
         SUCCESS=$(aws ec2-instance-connect send-ssh-public-key --region sa-east-1 --availability-zone sa-east-1a --instance-id ${{ secrets.EC2_IID }} --instance-os-user ubuntu --ssh-public-key file://~/tmp-key.pub --query "Success")
         echo "WAS SUCCESSFUL? $SUCCESS"
-        cd .. 
 
         if [ "$SUCCESS" == "true" ]; then
           echo "Connected to EC2 instance"
-          DATE=$(date '+%Y.%m.%d')
-          ZIP_NAME="build-$DATE.zip"
-
-          echo "ZIPPING"
-          zip -9qr $ZIP_NAME src/vendor
-          echo "ZIP done"
-          aws s3 mv $ZIP_NAME s3://redmin-deploy/redmindte/
           echo "start remote deployer by SSH"
           ssh -i ~/tmp-key.pub ubuntu@${{ vars.EC2_HOST }} "bash ~/deploy.sh"
         else
