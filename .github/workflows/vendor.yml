@@ -19,15 +19,6 @@ jobs:
         aws-secret-access-key: ${{ secrets.EC2_AWS_SECRET_KEY }}
         aws-region: sa-east-1
 
-    # - name: Cache Composer packages
-    #   id: composer-cache
-    #   uses: actions/cache@v3
-    #   with:
-    #     path: vendor
-    #     key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-php-
-
     - name: Install dependencies and copy vendor
       run: |
         cd src && composer update --ignore-platform-reqs --no-progress
@@ -49,8 +40,9 @@ jobs:
 
         if [ "$SUCCESS" == "true" ]; then
           echo "Connected to EC2 instance"
+          ssh-copy-id -i ~/tmp-key.pub -f ubuntu@${{ vars.EC2_HOST }}
           echo "start remote deployer by SSH"
-          ssh ubuntu@${{ vars.EC2_HOST }} "bash ~/deploy.sh"
+          ssh -i ~/tmp-key.pub ubuntu@${{ vars.EC2_HOST }} "bash ~/deploy.sh"
         else
           echo "Failed to connect to EC2 instance"
         fi
