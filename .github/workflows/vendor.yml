@@ -19,29 +19,15 @@ jobs:
         aws-secret-access-key: ${{ secrets.EC2_AWS_SECRET_KEY }}
         aws-region: sa-east-1
 
-    - name: Install dependencies and copy vendor
+    - name: Install dependencies and upload vendor-build to S3
       run: |
         cd src && composer update --ignore-platform-reqs --no-progress
 
         cd .. 
-        DATE=$(date '+%Y.%m.%d')
-        ZIP_NAME="build-$DATE.zip"
+        ZIP_NAME="vendor-build.zip"
 
         echo "ZIPPING"
         zip -9qr $ZIP_NAME src/vendor
         echo "ZIP done"
         aws s3 mv $ZIP_NAME s3://redmin-deploy/redmindte/
 
-        ssh-keygen -t rsa -b 4096 -f ~/tmp-key -N ""
-        chmod 400 ~/tmp-key.pub
-        
-        SUCCESS=$(aws ec2-instance-connect send-ssh-public-key --region sa-east-1 --availability-zone sa-east-1a --instance-id ${{ secrets.EC2_IID }} --instance-os-user ubuntu --ssh-public-key file://~/tmp-key.pub --query "Success")
-        echo "WAS SUCCESSFUL? $SUCCESS"
-
-        if [ "$SUCCESS" == "true" ]; then
-          echo "Connected to EC2 instance"
-          echo "start remote deployer by SSH"
-          ssh -o StrictHostKeyChecking=no -vvv -i ~/tmp-key.pub ubuntu@${{ vars.EC2_HOST }} "bash ~/deploy.sh"
-        else
-          echo "Failed to connect to EC2 instance"
-        fi
