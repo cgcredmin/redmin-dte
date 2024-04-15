@@ -13,6 +13,8 @@ trait SendMailTrait
         $url = 'https://api.mailjet.com/v3.1/send';
         $template_id = (int)env('MAILJET_TEMPLATEID');
         $fallbackEmail = env('FALLBACK_EMAIL', '');
+        $mail_from = env('MAILJET_FROM_EMAIL','no-reply@noreply.mail');
+        $name_from = env('APP_NAME','Mailjet');
 
         // dd($apiKeyPublic, $apiKeyPrivate, $url, $template_id, $fallbackEmail, $email, $attachments, $content);
 
@@ -20,8 +22,8 @@ trait SendMailTrait
             "Messages" => [
                 [
                     "From" => [
-                        "Email" => "no-reply@iegsw.cl",
-                        "Name" => "IEGSW"
+                        "Email" => $mail_from,
+                        "Name" => $name_from
                     ],
                     "To" => [
                         [

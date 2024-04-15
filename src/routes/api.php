@@ -17,11 +17,6 @@ $router->group(['prefix' => 'api'], function () use ($router) {
             $router->post('renewToken', 'Controller@renewToken');
         });
 
-        $router->group(['prefix' => 'contribuyentes'], function () use ($router) {
-            $router->post('getContribuyentes', 'ContribuyentesController@index');
-            $router->post('uploadContribuyentes', 'ContribuyentesController@upload');
-        });
-
         $router->group(['prefix' => 'compraventa'], function () use ($router) {
             $router->post('getCompras', 'LibroCompraVentaController@getCompras');
             $router->post('getVentas', 'LibroCompraVentaController@getVentas');
@@ -36,10 +31,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
             $router->post('uploadCertOrFolio', 'ConfigController@upload');
             $router->post('setConfig', 'ConfigController@setConfig');
             $router->post('getConfig', 'ConfigController@getConfig');
-            $router->post('gmail', 'ConfigController@gmail');
             $router->post('getLogs', 'ConfigController@getLogs');
-            $router->post('uploadDataBase', 'ConfigController@uploadDataBase');
-            $router->post('downloadDataBase', 'ConfigController@downloadDataBase');
         });
 
         $router->group(['prefix' => 'certificacion'], function () use ($router) {
@@ -64,14 +56,12 @@ $router->group(['prefix' => 'api'], function () use ($router) {
 
         $router->post('send-document', 'SendDocumentController@send');
 
-        $router->post('test', 'TestController@test');
-
         $router->post('get-crucial-data', 'InitController@getCrucialData');
     });
 
     $router->get('file/{hash}', 'TemporalController@getFile');
 
-    $router->post('upload/rcv', 'RcvController@upload');
+    // $router->post('upload/rcv', 'RcvController@upload');
 
     $router->post('get-pdf', 'PdfController@getPdf');
 });

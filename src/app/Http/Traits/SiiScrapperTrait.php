@@ -4,8 +4,6 @@ namespace App\Http\Traits;
 
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Cookie\CookieJar;
-
 
 trait SiiScrapperTrait
 {
@@ -54,7 +52,7 @@ trait SiiScrapperTrait
                     $message = trim($text[$text->length - 1]->textContent);
                     // dd($content, $message);
                 } catch (\Throwable $th) {
-                    $message = $err_text;
+                    $message = $err_text . ': ' . $th->getMessage();
                 }
                 return ['success' => false, 'message' => $message];
             }
