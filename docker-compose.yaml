@@ -17,9 +17,9 @@ services:
     volumes:
       - ./src:/var/www/html
     networks:
-      - dockerdb_default
+      - dockerdb_dockerdb
 
 #Docker Networks
 networks:
-  dockerdb_default:
+  dockerdb_dockerdb:
     external: true

@@ -24,29 +24,7 @@ for folder in folders:
     os.chmod(folder, 0o777)
     os.chown(folder, 1000, 1000)
 
-# read environment variables
-DB_CONNECTION = os.getenv('DB_CONNECTION')
-DB_DATABASE = os.getenv('DB_DATABASE')
-
-# check if DB_CONNECTION is set
-if DB_CONNECTION is None:
-    print(":exclamation:", ">> [bold red]DB_CONNECTION is not set[/bold red]")
-else:
-    # if DB_CONNECTION is set to sqlite, then check if the db file exists
-    if DB_CONNECTION == "sqlite":
-        if not os.path.isfile(DB_DATABASE):
-            open(DB_DATABASE, 'a').close()
-            print(":white_check_mark:",
-                  "\t - [green]" + DB_DATABASE + " CREATED.[/green]")
-            os.chmod(DB_DATABASE, 0o777)
-
-# #fix permissions problem on first start
+#fix permissions problem on first start
 print(":sparkles:", ">> [blue]Fixing permissions...[/blue]")
 os.chmod(base_path, 0o777)
 
-# #run composer install
-print(":rocket:", ">> [blue]Running composer install...[/blue]")
-os.execl("/usr/local/bin/composer", "composer", "install", "--ignore-platform-reqs")
-
-# execute db.py
-# os.system('python3 db.py')

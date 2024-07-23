@@ -8,7 +8,6 @@ use App\Console\Commands\ConsultaEstadoDte;
 use App\Console\Commands\RenovarToken;
 use App\Console\Commands\ResetApiSecret;
 use App\Console\Commands\ExtraerXML;
-use App\Console\Commands\DescargaContribuyentes;
 use App\Console\Commands\ManageApiUser;
 use Illuminate\Console\Scheduling\Schedule;
 use Laravel\Lumen\Console\Kernel as ConsoleKernel;
@@ -27,7 +26,6 @@ class Kernel extends ConsoleKernel
         BorraArchivosTemporales::class,
         ResetApiSecret::class,
         ExtraerXML::class,
-        DescargaContribuyentes::class,
         ManageApiUser::class
     ];
 
@@ -44,7 +42,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('redmin:rcv', ['--wts' => 'C'])->twiceDailyAt(0, 12, 0);
         $schedule->command('redmin:estadodte')->twiceDailyAt(1, 13, 0);
         $schedule->command('redmin:correo')->everyTenMinutes();
-        // $schedule->command('redmin:contribuyentes')->twiceDailyAt(1, 13, 0);
 
         // TODO: Add a command for checking 'folios' depletion and a some
         // sort of global process/trait or something that allows to check if

@@ -22,337 +22,339 @@ use App\Http\Traits\MakePDFTrait;
 
 class DteController extends Controller
 {
-    use MakePDFTrait;
+  use MakePDFTrait;
 
-    public function comprobarDocumento(Request $request)
-    {
-        $rules = [
-            'rutEmisor' => 'required|string',
-            // 'rutReceptor'=>'required|string',
-            'tipoDoc' => 'required|numeric',
-            'folioDoc' => 'required|numeric',
-            'fechaEmision' => 'required|date',
-            'montoTotal' => 'required|numeric',
-        ];
+  public function comprobarDocumento(Request $request)
+  {
+    $rules = [
+      'rutEmisor' => 'required|string',
+      // 'rutReceptor'=>'required|string',
+      'tipoDoc' => 'required|numeric',
+      'folioDoc' => 'required|numeric',
+      'fechaEmision' => 'required|date',
+      'montoTotal' => 'required|numeric',
+    ];
 
-        $this->validate($request, $rules);
+    $this->validate($request, $rules);
 
-        //get the dv from rutEmisor
-        $dvEmisor = substr($request->input('rutEmisor'), -1);
-        $rutEmisor = substr($request->input('rutEmisor'), 0, -2);
+    //get the dv from rutEmisor
+    $dvEmisor = substr($request->input('rutEmisor'), -1);
+    $rutEmisor = substr($request->input('rutEmisor'), 0, -2);
 
-        //get rutEmpresa without dv
-        $dvEmpresa = substr($this->rutEmpresa, -1);
-        $rutEmpresa = substr($this->rutEmpresa, 0, -2);
+    //get rutEmpresa without dv
+    $dvEmpresa = substr($this->rutEmpresa, -1);
+    $rutEmpresa = substr($this->rutEmpresa, 0, -2);
 
-        //get rutConsultante without dv
-        $dvContultante = substr($this->rutCert, -1);
-        $rutConsultante = substr($this->rutCert, 0, -2);
+    //get rutConsultante without dv
+    $dvContultante = substr($this->rutCert, -1);
+    $rutConsultante = substr($this->rutCert, 0, -2);
 
-        try {
-            $token = $this->token(true);
+    try {
+      $token = $this->token(true);
 
-            if (!$token) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'No se pudo obtener el token',
-                ]);
-            }
+      if (!$token) {
+        return response()->json([
+          'status' => 'error',
+          'message' => 'No se pudo obtener el token',
+        ]);
+      }
 
-            //convert $request->fechaEmision to format dmY
-            $fechaEmision = date('dmY', strtotime($request->fechaEmision));
+      //convert $request->fechaEmision to format dmY
+      $fechaEmision = date('dmY', strtotime($request->fechaEmision));
 
-            $xml = Sii::request('QueryEstDte', 'getEstDte', [
-                'RutConsultante' => $rutConsultante,
-                'DvConsultante' => $dvContultante,
-                'RutCompania' => $rutEmisor,
-                'DvCompania' => $dvEmisor,
-                'RutReceptor' => $rutEmpresa,
-                'DvReceptor' => $dvEmpresa,
-                'TipoDte' => $request->tipoDoc,
-                'FolioDte' => $request->folioDoc,
-                'FechaEmisionDte' => $fechaEmision,
-                'MontoDte' => $request->montoTotal,
-                'token' => $token,
-            ]);
+      $xml = Sii::request('QueryEstDte', 'getEstDte', [
+        'RutConsultante' => $rutConsultante,
+        'DvConsultante' => $dvContultante,
+        'RutCompania' => $rutEmisor,
+        'DvCompania' => $dvEmisor,
+        'RutReceptor' => $rutEmpresa,
+        'DvReceptor' => $dvEmpresa,
+        'TipoDte' => $request->tipoDoc,
+        'FolioDte' => $request->folioDoc,
+        'FechaEmisionDte' => $fechaEmision,
+        'MontoDte' => $request->montoTotal,
+        'token' => $token,
+      ]);
 
-            // si el estado se pudo recuperar se muestra
-            if ($xml !== false) {
-                $result = $xml->xpath('/SII:RESPUESTA/SII:RESP_HDR')[0];
+      // si el estado se pudo recuperar se muestra
+      if ($xml !== false) {
+        $result = $xml->xpath('/SII:RESPUESTA/SII:RESP_HDR')[0];
 
-                if ($result->ERR_CODE > 15 || $result->ERR_CODE < 0) {
-                    return response()->json($result, 400);
-                }
-
-                $rcv = RegistroCompraVenta::where([
-                    ['detTipoDoc', '=', $request->tipoDoc],
-                    ['detNroDoc', '=', $request->folioDoc],
-                    ['detFchDoc', '=', $request->fechaEmision],
-                    ['detMntNeto', '=', $request->montoTotal],
-                    ['detRutDoc', '=', $rutEmisor],
-                ])->first();
-
-                if ($rcv) {
-                    $comprobacion = ComprobacionSii::where(
-                        'registro_compra_venta_id',
-                        '=',
-                        $rcv->id,
-                    )->first();
-                    if ($comprobacion) {
-                        $comprobacion->estado = $result->ESTADO;
-                        $comprobacion->glosa_estado = $result->GLOSA_ESTADO;
-                        $comprobacion->error = $result->ERR_CODE;
-                        $comprobacion->glosa_error = $result->GLOSA_ERR;
-                        $comprobacion->fecha_consulta = date('Y-m-d H:i:s');
-                        // $comprobacion->xml = $xml->saveXML();
-                    } else {
-                        $comprobacion = new ComprobacionSii();
-                        $comprobacion->registro_compra_venta_id = $rcv->id;
-                        $comprobacion->estado = $result->ESTADO;
-                        $comprobacion->glosa_estado = $result->GLOSA_ESTADO;
-                        $comprobacion->error = $result->ERR_CODE;
-                        $comprobacion->glosa_error = $result->GLOSA_ERR;
-                        $comprobacion->fecha_consulta = date('Y-m-d H:i:s');
-                        // $comprobacion->xml = $xml->saveXML();
-                    }
-                    $comprobacion->save();
-
-                }
-
-                $result['timestamp'] = date('Y-m-d H:i:s');
-
-                return response()->json($result, 200);
-            }
-
-            // si hubo errores se muestran
-            if (!$xml) {
-                return response()->json(\sasco\LibreDTE\Log::readAll(), 400);
-            }
-        } catch (\Exception $e) {
-            return response()->json($e->getMessage(), 400);
+        if ($result->ERR_CODE > 15 || $result->ERR_CODE < 0) {
+          return response()->json($result, 400);
         }
+
+        $rcv = RegistroCompraVenta::where([
+          ['detTipoDoc', '=', $request->tipoDoc],
+          ['detNroDoc', '=', $request->folioDoc],
+          ['detFchDoc', '=', $request->fechaEmision],
+          ['detMntNeto', '=', $request->montoTotal],
+          ['detRutDoc', '=', $rutEmisor],
+        ])->first();
+
+        if ($rcv) {
+          $comprobacion = ComprobacionSii::where(
+            'registro_compra_venta_id',
+            '=',
+            $rcv->id,
+          )->first();
+          if ($comprobacion) {
+            $comprobacion->estado = $result->ESTADO;
+            $comprobacion->glosa_estado = $result->GLOSA_ESTADO;
+            $comprobacion->error = $result->ERR_CODE;
+            $comprobacion->glosa_error = $result->GLOSA_ERR;
+            $comprobacion->fecha_consulta = date('Y-m-d H:i:s');
+            // $comprobacion->xml = $xml->saveXML();
+          } else {
+            $comprobacion = new ComprobacionSii();
+            $comprobacion->registro_compra_venta_id = $rcv->id;
+            $comprobacion->estado = $result->ESTADO;
+            $comprobacion->glosa_estado = $result->GLOSA_ESTADO;
+            $comprobacion->error = $result->ERR_CODE;
+            $comprobacion->glosa_error = $result->GLOSA_ERR;
+            $comprobacion->fecha_consulta = date('Y-m-d H:i:s');
+            // $comprobacion->xml = $xml->saveXML();
+          }
+          $comprobacion->save();
+        }
+
+        $result['timestamp'] = date('Y-m-d H:i:s');
+
+        return response()->json($result, 200);
+      }
+
+      // si hubo errores se muestran
+      if (!$xml) {
+        return response()->json(\sasco\LibreDTE\Log::readAll(), 400);
+      }
+    } catch (\Exception $e) {
+      return response()->json($e->getMessage(), 400);
+    }
+  }
+
+  public function enviaDocumento(Request $request)
+  {
+    $rules = [
+      'Encabezado.IdDoc.TipoDTE' => 'required',
+      'Encabezado.IdDoc.Folio' => 'required',
+
+      'Encabezado.Emisor.RUTEmisor' => 'required',
+      'Encabezado.Emisor.RznSoc' => 'required',
+      'Encabezado.Emisor.GiroEmis' => 'required',
+      'Encabezado.Emisor.Acteco' => 'required',
+      'Encabezado.Emisor.DirOrigen' => 'required',
+      'Encabezado.Emisor.CmnaOrigen' => 'required',
+
+      'Encabezado.Receptor.RUTRecep' => 'required',
+      'Encabezado.Receptor.RznSocRecep' => 'required',
+      'Encabezado.Receptor.GiroRecep' => 'required',
+      'Encabezado.Receptor.DirRecep' => 'required',
+      'Encabezado.Receptor.CmnaRecep' => 'required',
+
+      'Detalle' => 'required_if:Encabezado.IdDoc.TipoDTE,33',
+      'Detalle.*.NmbItem' => 'required',
+      // 'Detalle.*.QtyItem' => 'required',
+      // 'Detalle.*.PrcItem' => 'required',
+
+      // 'Caratula.RutReceptor' => 'required',
+      // 'Caratula.FchResol' => 'required',
+      // 'Caratula.NroResol' => 'required',
+    ];
+
+    $this->validate($request, $rules);
+
+    $tipo_dte = $request->input('Encabezado.IdDoc.TipoDTE');
+
+    //check if file exists
+    if (!file_exists($this->rutas->folios . "$tipo_dte.xml")) {
+      return response()->json(
+        ['error' => 'No existen folios para este tipo de documento'],
+        400,
+      );
     }
 
-    public function enviaDocumento(Request $request)
-    {
-        $rules = [
-            'Encabezado.IdDoc.TipoDTE' => 'required',
-            'Encabezado.IdDoc.Folio' => 'required',
+    // Objetos de Firma y Folios
+    $xmlFolios = file_get_contents($this->rutas->folios . "$tipo_dte.xml");
 
-            'Encabezado.Emisor.RUTEmisor' => 'required',
-            'Encabezado.Emisor.RznSoc' => 'required',
-            'Encabezado.Emisor.GiroEmis' => 'required',
-            'Encabezado.Emisor.Acteco' => 'required',
-            'Encabezado.Emisor.DirOrigen' => 'required',
-            'Encabezado.Emisor.CmnaOrigen' => 'required',
+    $Folios = new Sii\Folios($xmlFolios);
 
-            'Encabezado.Receptor.RUTRecep' => 'required',
-            'Encabezado.Receptor.RznSocRecep' => 'required',
-            'Encabezado.Receptor.GiroRecep' => 'required',
-            'Encabezado.Receptor.DirRecep' => 'required',
-            'Encabezado.Receptor.CmnaRecep' => 'required',
+    // generar XML del DTE timbrado y firmado
+    $factura = [
+      'Encabezado' => $request->input('Encabezado'),
+      'Detalle' => $request->input('Detalle'),
+    ];
+    if ($request->input('Referencia')) {
+      $factura['Referencia'] = $request->input('Referencia');
+    }
+    $rutReceptor = $request->input('Caratula.RutReceptor') ?? '60803000-K';
+    if ($tipo_dte == 39) {
+      $rutReceptor = '66666666-6';
+    }
+    $caratula = [
+      'RutEnvia' => $this->rutCert,
+      'RutReceptor' => $rutReceptor,
+      'FchResol' => $this->FchResol,
+      'NroResol' => $this->NroResol,
+    ];
 
-            'Detalle' => 'required_if:Encabezado.IdDoc.TipoDTE,33',
-            'Detalle.*.NmbItem' => 'required',
-            // 'Detalle.*.QtyItem' => 'required',
-            // 'Detalle.*.PrcItem' => 'required',
+    // cuando está en ambiente de certificación se inyecta datos de receptor
+    if ($this->ambiente === 'certificacion') {
+      $factura['Encabezado']['Receptor'] = [
+        'RUTRecep' => '60803000-K',
+        'RznSocRecep' => 'Servicio de Impuestos Internos',
+        'GiroRecep' => 'Gobierno',
+        'DirRecep' => 'Alonso Ovalle 680',
+        'CmnaRecep' => 'Santiago',
+      ];
 
-            // 'Caratula.RutReceptor' => 'required',
-            // 'Caratula.FchResol' => 'required',
-            // 'Caratula.NroResol' => 'required',
-        ];
-
-        $this->validate($request, $rules);
-
-        $tipo_dte = $request->input('Encabezado.IdDoc.TipoDTE');
-
-        //check if file exists
-        if (!file_exists($this->rutas->folios . "$tipo_dte.xml")) {
-            return response()->json(
-                ['error' => 'No existen folios para este tipo de documento'],
-                400,
-            );
-        }
-
-        // Objetos de Firma y Folios
-        $xmlFolios = file_get_contents($this->rutas->folios . "$tipo_dte.xml");
-
-        $Folios = new Sii\Folios($xmlFolios);
-
-        // generar XML del DTE timbrado y firmado
-        $factura = [
-            'Encabezado' => $request->input('Encabezado'),
-            'Detalle' => $request->input('Detalle'),
-        ];
-        if ($request->input('Referencia')) {
-            $factura['Referencia'] = $request->input('Referencia');
-        }
-        $caratula = [
-            'RutEnvia' => $this->rutCert,
-            'RutReceptor' => '60803000-K',
-            'FchResol' => $this->FchResol,
-            'NroResol' => $this->NroResol,
-        ];
-
-        // cuando está en ambiente de certificación se inyecta datos de receptor
-        if ($this->ambiente === 'certificacion') {
-            $factura['Encabezado']['Receptor'] = [
-                'RUTRecep' => '60803000-K',
-                'RznSocRecep' => 'Servicio de Impuestos Internos',
-                'GiroRecep' => 'Gobierno',
-                'DirRecep' => 'Alonso Ovalle 680',
-                'CmnaRecep' => 'Santiago',
-            ];
-
-            //cambiar rutCeptor en caratula
-            $caratula['RutReceptor'] = '60803000-K';
-            // cambiar NroResol en encabezado
-            $caratula['NroResol'] = 0;
-        }
-
-        $DTE = new Dte($factura);
-        $DTE->timbrar($Folios);
-        $DTE->firmar($this->firma);
-
-        // generar sobre con el envío del DTE y enviar al SII
-        $EnvioDTE = new Sii\EnvioDte();
-        $EnvioDTE->agregar($DTE);
-        $EnvioDTE->setFirma($this->firma);
-        $EnvioDTE->setCaratula($caratula);
-        $EnvioDTE->generar();
-
-        if ($EnvioDTE->schemaValidate()) {
-            $xml = $EnvioDTE->generar();
-            $track_id = $EnvioDTE->enviar();
-            $doc = $EnvioDTE->getDocumentos()[0];
-            $ted = $doc ? $doc->getTED() : '';
-
-            //Generar Timbre en PNG
-            $code = new DNS2D();
-            $timbre =
-                $ted != '' && $track_id !== false
-                ? $code->getBarcodePNG($ted, 'PDF417')
-                : '';
-
-            $filenameXml = $this->rutas->dte. $DTE->getID() . ' - TI' . $track_id . '.xml';
-            file_put_contents($filenameXml, $xml);
-            $xmlstring = file_get_contents($filenameXml);
-
-            $filenamePdf = $this->make_pdf($xmlstring);
-            $pdfstring = file_get_contents($filenamePdf);
-
-            $stringXml = $track_id !== false ? base64_encode($xmlstring) : '';
-            $stringPdf = $track_id !== false ? base64_encode($pdfstring) : '';
-
-            return response()->json(
-                [
-                    'trackId' => $track_id,
-                    "timestamp" => date('Y-m-d H:i:s'),
-                    'xml' => $stringXml,
-                    'pdf' => $stringPdf,
-                    'timbre' => "$timbre",
-                ],
-                200,
-            );
-        } else {
-            $error = $this->parsearErrores([
-                Estado::DTE_ERROR_GETDATOS,
-                Estado::DTE_ERROR_TIPO,
-                Estado::DTE_ERROR_RANGO_FOLIO,
-                Estado::DTE_FALTA_FCHEMIS,
-                Estado::DTE_FALTA_MNTTOTAL,
-                Estado::DTE_ERROR_TIMBRE,
-                Estado::DTE_ERROR_FIRMA,
-                Estado::DTE_ERROR_LOADXML,
-                Estado::ENVIO_OK,
-                Estado::ENVIO_USUARIO_INCORRECTO,
-                Estado::ENVIO_TAMANIO_ARCHIVO,
-                Estado::ENVIO_ARCHIVO_CORTADO,
-                Estado::ENVIO_NO_AUTENTICADO,
-                Estado::ENVIO_EMPRESA_NO_AUTORIZADA,
-                Estado::ENVIO_ESQUEMA_INVALIDO,
-                Estado::ENVIO_ERROR_FIRMA,
-                Estado::ENVIO_SISTEMA_BLOQUEADO,
-                Estado::ENVIO_SSL_SIN_VERIFICAR,
-                Estado::ENVIO_ERROR_CURL,
-                Estado::ENVIO_ERROR_500,
-                Estado::ENVIO_ERROR_XML,
-                Estado::ENVIO_ERROR_GZIP,
-                EStado::DOCUMENTO_FALTA_XML,
-                Estado::DOCUMENTO_FALTA_SCHEMA,
-                Estado::DOCUMENTO_ERROR_SCHEMA,
-                Estado::DOCUMENTO_ERROR_GENERAR_XML,
-            ]);
-            return response()->json(['error' => $error], 400);
-        }
+      //cambiar rutCeptor en caratula
+      $caratula['RutReceptor'] = '60803000-K';
+      // cambiar NroResol en encabezado
+      $caratula['NroResol'] = 0;
     }
 
-    public function getTempLink(Request $request)
-    {
-        $hash = $request->hash ?? '-1';
-        $compo = ComprobacionSii::where('pdf', $hash)->first();
+    $DTE = new Dte($factura);
+    $DTE->timbrar($Folios);
+    $DTE->firmar($this->firma);
 
-        if ($compo) {
-            $fileName = Crypt::decryptString($compo->pdf);
-            $fileName = str_replace($this->rutas->pdf, '', $fileName);
+    // generar sobre con el envío del DTE y enviar al SII
+    $EnvioDTE = new Sii\EnvioDte();
+    $EnvioDTE->agregar($DTE);
+    $EnvioDTE->setFirma($this->firma);
+    $EnvioDTE->setCaratula($caratula);
+    $EnvioDTE->generar();
 
-            if (Storage::disk('pdfs')->exists($fileName) === false) {
-                return response()->json(
-                    ['error' => 'No se encontró el documento'],
-                    400,
-                );
-            }
+    if ($EnvioDTE->schemaValidate()) {
+      $xml = $EnvioDTE->generar();
+      $track_id = $EnvioDTE->enviar();
+      $doc = $EnvioDTE->getDocumentos()[0];
+      $ted = $doc ? $doc->getTED() : '';
 
-            $file = Storage::disk('pdfs')->get($fileName);
+      //Generar Timbre en PNG
+      $code = new DNS2D();
+      $timbre =
+        $ted != '' && $track_id !== false
+        ? $code->getBarcodePNG($ted, 'PDF417')
+        : '';
 
-            if ($request->has('formato')) {
-                if ($request->formato == 'base64') {
-                    //get mime type
-                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                    $mime = finfo_buffer($finfo, $file);
-                    finfo_close($finfo);
+      $filenameXml = $this->rutas->dte . $DTE->getID() . ' - TI' . $track_id . '.xml';
+      file_put_contents($filenameXml, $xml);
+      $xmlstring = file_get_contents($filenameXml);
 
-                    return response(
-                        'data:' . $mime . ';base64,' . base64_encode($file),
-                        200,
-                    );
-                } elseif ($request->formato == 'url') {
-                    $extension = pathinfo($fileName, PATHINFO_EXTENSION);
-                    $base64 = base64_encode($file);
-                    $name = md5($base64) . ".$extension";
-                    $hash = encrypt($name);
+      $filenamePdf = $this->make_pdf($xmlstring);
+      $pdfstring = file_get_contents($filenamePdf);
 
-                    $url = env('APP_URL') . "/api/file/$hash";
+      $stringXml = $track_id !== false ? base64_encode($xmlstring) : '';
+      $stringPdf = $track_id !== false ? base64_encode($pdfstring) : '';
 
-                    //set expiration date to 1 hour
-                    $expira = Carbon::now()->addHour();
+      return response()->json(
+        [
+          'trackId' => $track_id,
+          "timestamp" => date('Y-m-d H:i:s'),
+          'xml' => $stringXml,
+          'pdf' => $stringPdf,
+          'timbre' => "$timbre",
+        ],
+        200,
+      );
+    } else {
+      $error = $this->parsearErrores([
+        Estado::DTE_ERROR_GETDATOS,
+        Estado::DTE_ERROR_TIPO,
+        Estado::DTE_ERROR_RANGO_FOLIO,
+        Estado::DTE_FALTA_FCHEMIS,
+        Estado::DTE_FALTA_MNTTOTAL,
+        Estado::DTE_ERROR_TIMBRE,
+        Estado::DTE_ERROR_FIRMA,
+        Estado::DTE_ERROR_LOADXML,
+        Estado::ENVIO_OK,
+        Estado::ENVIO_USUARIO_INCORRECTO,
+        Estado::ENVIO_TAMANIO_ARCHIVO,
+        Estado::ENVIO_ARCHIVO_CORTADO,
+        Estado::ENVIO_NO_AUTENTICADO,
+        Estado::ENVIO_EMPRESA_NO_AUTORIZADA,
+        Estado::ENVIO_ESQUEMA_INVALIDO,
+        Estado::ENVIO_ERROR_FIRMA,
+        Estado::ENVIO_SISTEMA_BLOQUEADO,
+        Estado::ENVIO_SSL_SIN_VERIFICAR,
+        Estado::ENVIO_ERROR_CURL,
+        Estado::ENVIO_ERROR_500,
+        Estado::ENVIO_ERROR_XML,
+        Estado::ENVIO_ERROR_GZIP,
+        EStado::DOCUMENTO_FALTA_XML,
+        Estado::DOCUMENTO_FALTA_SCHEMA,
+        Estado::DOCUMENTO_ERROR_SCHEMA,
+        Estado::DOCUMENTO_ERROR_GENERAR_XML,
+      ]);
+      return response()->json(['error' => $error], 400);
+    }
+  }
 
-                    //store to temp directory
-                    $path = Storage::disk('temp')->put($name, $file);
+  public function getTempLink(Request $request)
+  {
+    $hash = $request->hash ?? '-1';
+    $compo = ComprobacionSii::where('pdf', $hash)->first();
 
-                    $tf = TempFiles::create([
-                        'nombre' => $fileName,
-                        'hash' => $hash,
-                        'ext' => $extension,
-                        'ruta' => $path,
-                        'expires_at' => $expira,
-                    ]);
+    if ($compo) {
+      $fileName = Crypt::decryptString($compo->pdf);
+      $fileName = str_replace($this->rutas->pdf, '', $fileName);
 
-                    return response()->json(['data' => $url], 200);
-                } elseif ($request->formato == 'download') {
-                    return response()->download($file, $fileName);
-                } elseif ($request->formato == 'raw') {
-                    return response($file, 200)->header(
-                        'Content-Type',
-                        'application/pdf',
-                    );
-                }
-            } else {
-                return response()->json(['error' => 'Formato no válido'], 400);
-            }
+      if (Storage::disk('pdfs')->exists($fileName) === false) {
+        return response()->json(
+          ['error' => 'No se encontró el documento'],
+          400,
+        );
+      }
+
+      $file = Storage::disk('pdfs')->get($fileName);
+
+      if ($request->has('formato')) {
+        if ($request->formato == 'base64') {
+          //get mime type
+          $finfo = finfo_open(FILEINFO_MIME_TYPE);
+          $mime = finfo_buffer($finfo, $file);
+          finfo_close($finfo);
+
+          return response(
+            'data:' . $mime . ';base64,' . base64_encode($file),
+            200,
+          );
+        } elseif ($request->formato == 'url') {
+          $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+          $base64 = base64_encode($file);
+          $name = md5($base64) . ".$extension";
+          $hash = encrypt($name);
+
+          $url = env('APP_URL') . "/api/file/$hash";
+
+          //set expiration date to 1 hour
+          $expira = Carbon::now()->addHour();
+
+          //store to temp directory
+          $path = Storage::disk('temp')->put($name, $file);
+
+          $tf = TempFiles::create([
+            'nombre' => $fileName,
+            'hash' => $hash,
+            'ext' => $extension,
+            'ruta' => $path,
+            'expires_at' => $expira,
+          ]);
+
+          return response()->json(['data' => $url], 200);
+        } elseif ($request->formato == 'download') {
+          return response()->download($file, $fileName);
+        } elseif ($request->formato == 'raw') {
+          return response($file, 200)->header(
+            'Content-Type',
+            'application/pdf',
+          );
         }
-
-        return response()->json(['error' => 'No se encontró el documento'], 400);
+      } else {
+        return response()->json(['error' => 'Formato no válido'], 400);
+      }
     }
 
+    return response()->json(['error' => 'No se encontró el documento'], 400);
+  }
 }

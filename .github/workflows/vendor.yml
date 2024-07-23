@@ -1,0 +1,33 @@
+name: Vendor Install & Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure AWS
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.EC2_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.EC2_AWS_SECRET_KEY }}
+        aws-region: sa-east-1
+
+    - name: Install dependencies and upload vendor-build to S3
+      run: |
+        cd src && composer update --ignore-platform-reqs --no-progress
+
+        cd .. 
+        ZIP_NAME="vendor-build.zip"
+
+        echo "ZIPPING"
+        zip -9qr $ZIP_NAME src/vendor
+        echo "ZIP done"
+        aws s3 mv $ZIP_NAME s3://redmin-deploy/redmindte/
+
